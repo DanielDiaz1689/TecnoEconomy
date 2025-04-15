@@ -1,0 +1,2 @@
+C:\Proyecto Ecommerce\Ecommerce\Ecommerce\wwwroot\favicon.ico
+wwwroot\favicon.ico

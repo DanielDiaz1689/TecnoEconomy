@@ -1,0 +1,3 @@
+C:\Proyecto Ecommerce\Ecommerce\Ecommerce.Client\obj\Debug\net9.0\staticwebassets.build.json
+C:\Proyecto Ecommerce\Ecommerce\Ecommerce.Client\obj\Debug\net9.0\staticwebassets.build.json
+C:\Proyecto Ecommerce\Ecommerce\Ecommerce.Client\obj\Debug\net9.0\staticwebassets.build.json
