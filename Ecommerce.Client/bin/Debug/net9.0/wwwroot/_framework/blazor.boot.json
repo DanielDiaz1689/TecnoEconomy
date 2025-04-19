@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "Ecommerce.Client",
   "resources": {
-    "hash": "sha256-dUMCxKpyqlB+mh723gPHBWIedKLIl8UWplloQSGT6aI=",
+    "hash": "sha256-oTFF+qYje4ECHy7UwnLHv8hpFpZ/nO3O70ALMTaiO/w=",
     "fingerprinting": {
       "Microsoft.AspNetCore.Authorization.gf26ou9jj9.wasm": "Microsoft.AspNetCore.Authorization.wasm",
       "Microsoft.AspNetCore.Components.v3fd2n5hlr.wasm": "Microsoft.AspNetCore.Components.wasm",
@@ -204,10 +204,10 @@
       "icudt_CJK.tjcz0u77k5.dat": "icudt_CJK.dat",
       "icudt_EFIGS.tptq2av103.dat": "icudt_EFIGS.dat",
       "icudt_no_CJK.lfu7j35m59.dat": "icudt_no_CJK.dat",
-      "Ecommerce.DTO.ud3izzggpu.wasm": "Ecommerce.DTO.wasm",
-      "Ecommerce.DTO.ahxfchbcr1.pdb": "Ecommerce.DTO.pdb",
-      "Ecommerce.Client.t6fu47fllw.wasm": "Ecommerce.Client.wasm",
-      "Ecommerce.Client.c3881w9vag.pdb": "Ecommerce.Client.pdb"
+      "Ecommerce.DTO.pnvfn5bsjf.wasm": "Ecommerce.DTO.wasm",
+      "Ecommerce.DTO.q79uhwziak.pdb": "Ecommerce.DTO.pdb",
+      "Ecommerce.Client.ytatc2vnx2.wasm": "Ecommerce.Client.wasm",
+      "Ecommerce.Client.d06tue342t.pdb": "Ecommerce.Client.pdb"
     },
     "jsModuleNative": {
       "dotnet.native.8bti36lthm.js": "sha256-HFADmT26AarHu4tMjFaTPxINmQjBJGtdPN+CKjtNMFE="
@@ -420,12 +420,12 @@
       "WindowsBase.tuf34ieu7y.wasm": "sha256-Bd+l972cOS1eVeLzrQNlgD6LPWV1QXBSzJhv8Tx1WGI=",
       "mscorlib.5q5u0swn6q.wasm": "sha256-g9cI1sECkF7bxMqOSB+W0a4utdDsqTrqZzyiAEeA65g=",
       "netstandard.w8gk1pigg1.wasm": "sha256-QFR5QNPfvyZTexW3IA/AFx6ZmIF/TecvOUsSK4gM4po=",
-      "Ecommerce.DTO.ud3izzggpu.wasm": "sha256-Xq/nP+nXkdzpS9AH8B+i5Iq88/Z3LQMMApqmUY/K3+Y=",
-      "Ecommerce.Client.t6fu47fllw.wasm": "sha256-myeXmB3o9yfvSnZzRgUmMC8URhSyy/ISLg3aVywsu74="
+      "Ecommerce.DTO.pnvfn5bsjf.wasm": "sha256-+1bOB9zjTdvGkMWpSyQGZg9vLuFWAAYs8p4qyFpmvfs=",
+      "Ecommerce.Client.ytatc2vnx2.wasm": "sha256-FmBxMJwioYJRq+QNCQUMQC8DMm9W2Mp/fwy30DdGqug="
     },
     "pdb": {
-      "Ecommerce.DTO.ahxfchbcr1.pdb": "sha256-wojcavRElgXC5PYoY/by51VH7cfE/CR1Evcm1UpNrMU=",
-      "Ecommerce.Client.c3881w9vag.pdb": "sha256-+EufEKiFfYAxhFK1PzPCM9Tw94KG9xB9J74X0x8a9aA="
+      "Ecommerce.DTO.q79uhwziak.pdb": "sha256-2pSI1LXl06Gu/AFibYeVGZtGtNfBamNMoMMCPn4eo7g=",
+      "Ecommerce.Client.d06tue342t.pdb": "sha256-UzZJJyG8gV3i2toVJ84UszAuITpzIJ3Bpyc6qXurAgI="
     }
   },
   "cacheBootResources": true,

@@ -1,0 +1,50 @@
+﻿## Ignore Visual Studio files
+.vs/
+*.user
+*.suo
+
+## Ignore build results
+bin/
+obj/
+out/
+
+## Ignore ASP.NET Core artifacts
+wwwroot/*.cache
+wwwroot/*.gz
+wwwroot/*.br
+wwwroot/_framework/
+*.db
+
+## Ignore Rider files
+.idea/
+
+## Ignore logs
+*.log
+
+## Ignore packages
+*.nupkg
+*.snupkg
+packages/
+
+## Ignore sensitive files
+secrets.json
+.env
+
+## Ignore Blazor WebAssembly build artifacts
+*.wasm
+*.pdb.gz
+*.dll.gz
+*.json.gz
+wwwroot/_framework/*.*
+obj/Debug/net*/compressed/
+obj/Debug/net*/webcil/
+bin/Debug/net*/Ecommerce.*
+
+## Ignore temp files
+*.tmp
+*.bak
+*.swp
+cls
+
+
+
