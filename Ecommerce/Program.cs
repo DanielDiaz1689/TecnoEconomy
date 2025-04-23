@@ -20,6 +20,8 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        builder.Services.AddControllers();
+
         // Add MudBlazor services
         builder.Services.AddMudServices();
         builder.Services.AddDbContext<PuntoDeVentaContext>(options =>
@@ -35,9 +37,19 @@ public class Program
 
         builder.Services.AddScoped<IUsuarioServicio, UsuarioServicio>();
         //builder.Services.AddScoped<ICategoriaServicio, CategoriaServicio>();
-        builder.Services.AddScoped<IProductoServicio, ProductoServicio>();
+        //builder.Services.AddScoped<IProductoServicio, ProductoServicio>();
         builder.Services.AddScoped<IVentaServicio, VentaServicio>();
         builder.Services.AddScoped<IDashboardServicio, DashboardServicio>();
+
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("NuevaPolitica", app =>
+            {
+                app.AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+            });
+        });
 
 
 
@@ -45,13 +57,19 @@ public class Program
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents()
             .AddInteractiveWebAssemblyComponents();
-      
+
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
+
+
 
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
+            app.UseSwagger();
+            app.UseSwaggerUI();
             app.UseWebAssemblyDebugging();
         }
         else
@@ -61,12 +79,17 @@ public class Program
             app.UseHsts();
         }
 
+        app.UseCors("NuevaPolitica");
+
         app.UseHttpsRedirection();
 
         app.UseAntiforgery();
 
+        app.MapControllers();
+
         app.MapStaticAssets();
-        app.MapRazorComponents<App>()
+        
+        app.MapRazorComponents<AppServer>()
             .AddInteractiveServerRenderMode()
             .AddInteractiveWebAssemblyRenderMode()
             .AddAdditionalAssemblies(typeof(Client._Imports).Assembly);
