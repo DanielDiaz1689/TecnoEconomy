@@ -1,0 +1,275 @@
+﻿@page "/catalogo"
+
+@using Ecommerce.DTO
+@using Ecommerce.Client.Servicios.Contrato
+@using Ecommerce.Client.Servicios.Implementacion
+@using Ecommerce.Servicio.Implementacion
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components
+@using CurrieTechnologies.Razor.SweetAlert2
+@inject ICarritoServicio carritoServicio
+@inject IProductoClienteServicio productoServicio
+@inject IFakeProductoServicio fakeProductoServicio
+@inject IJSRuntime JS
+@inject SweetAlertService Swal
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<div class="d-flex flex-column align-items-center justify-content-center min-vh-100 bg-light px-3 py-5">
+    <h2 class="mb-4 text-h4 text-primary text-center">Catálogo de Productos</h2>
+
+    @* Bloque para manejar el estado de carga *@
+    @if (isLoading)
+    {
+        <MudProgressCircular Indeterminate="true" Class="d-flex justify-center my-8" />
+        <MudText Typo="Typo.h6" Class="text-center">Cargando productos...</MudText>
+    }
+    else if (productosParaMostrar == null || !productosParaMostrar.Any())
+    {
+        <MudText Typo="Typo.h6" Class="text-center">No se encontraron productos para mostrar.</MudText>
+        @* Puedes añadir un botón para reintentar la carga si quieres *@
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="OnInitializedAsync" Class="mt-4">
+            Reintentar Carga
+        </MudButton>
+    }
+    else
+    {
+        <MudGrid GutterSize="GutterSize.Medium" Class="justify-center mx-auto" Style="max-width: 1200px;">
+            @foreach (var producto in productosParaMostrar)
+            {
+                <MudItem xs="12" sm="6" md="4" lg="3">
+                    <div class="product-card-outer-wrapper rounded-xl elevation-6"
+                         @onmouseenter="@(() => SetHoverState(producto, true))"
+                         @onmouseleave="@(() => SetHoverState(producto, false))">
+
+                        <MudCard Class="h-100 d-flex flex-column">
+                            <MudCardMedia Image="@producto.Imagen" Height="200" Class="product-image-display object-contain p-4 rounded-t-xl" />
+
+                            <MudCardContent Class="d-flex flex-column flex-grow-1 justify-space-between p-4">
+                                <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2 font-bold text-gray-800 product-title-text">@producto.Titulo</MudText>
+
+                                <div class="product-description-content-wrapper @(producto.IsHovered ? "show-description" : "")">
+                                    <MudText Align="Align.Center" Class="text-sm text-gray-600 mb-2">@producto.Descripcion</MudText>
+                                </div>
+
+                                <MudText Color="Color.Primary" Typo="Typo.subtitle1" Align="Align.Center" Class="font-semibold text-lg mt-2">
+                                    $@producto.Precio
+                                </MudText>
+
+                                <div class="d-flex justify-center my-3">
+                                    <MudNumericField T="int" Label="Cantidad"
+                                                     @bind-Value="producto.Cantidad"
+                                                     Min="1"
+                                                     Style="width: 100px;"
+                                                     Class="rounded-lg" />
+                                </div>
+
+                                <MudButton Color="Color.Primary"
+                                           Variant="Variant.Filled"
+                                           FullWidth="true"
+                                           OnClick="@(() => AgregarAlCarrito(producto))"
+                                           Class="mt-2 rounded-lg mud-button-add-to-cart">
+                                    Agregar al Carrito
+                                </MudButton>
+                            </MudCardContent>
+                        </MudCard>
+                    </div>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</div>
+
+@code {
+    private List<ProductoParaMostrar> productosParaMostrar = new();
+    private bool isLoading = true;
+    private string categoriaFiltro = "electronics"; // Categoría específica para productos de FakeStore y algunos propios
+    private string categoriaPorDefectoLocal = "general"; // O "sin categoría", "otros", lo que uses para productos sin categoría específica
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine("DEBUG (Catalogo): OnInitializedAsync iniciado.");
+        isLoading = true;
+        productosParaMostrar.Clear();
+
+        try
+        {
+            // --- Carga y filtro de productos de tu base de datos (ProductoClienteServicio) ---
+            Console.WriteLine("DEBUG (Catalogo): Llamando a productoServicio.Lista('')");
+            var respuestaLocal = await productoServicio.Lista("");
+
+            if (respuestaLocal.EsCorrecto && respuestaLocal.Resultado != null)
+            {
+                Console.WriteLine($"DEBUG (Catalogo): Productos locales recibidos. Cantidad: {respuestaLocal.Resultado.Count}");
+
+                // Filtrar productos locales:
+                // Incluye aquellos con la categoría 'electronics' (case-insensitive)
+                // O aquellos cuya categoría es NULL/vacía (los que tú creaste sin categoría explícita)
+                var productosLocalesFiltrados = respuestaLocal.Resultado
+                                                        .Where(p =>
+                                                            (p.PrCategoria != null && p.PrCategoria.Equals(categoriaFiltro, StringComparison.OrdinalIgnoreCase)) ||
+                                                            (string.IsNullOrEmpty(p.PrCategoria))) // <<-- CAMBIO CLAVE AQUÍ
+                                                        .Select(p => new ProductoParaMostrar
+                                                            {
+                                                                Id = p.PrId,
+                                                                ExternalId = p.PrExternalId,
+                                                                Titulo = p.PrTitulo,
+                                                                Descripcion = p.PrDescripcion,
+                                                                Precio = p.PrValorVenta ?? 0m,
+                                                                Imagen = p.PrImagen ?? "https://placehold.co/200x200/cccccc/ffffff?text=No+Image",
+                                                                PorcIva = p.PrPorcIva ?? 0m,
+                                                                Cantidad = 1,
+                                                                Categoria = p.PrCategoria ?? categoriaPorDefectoLocal // Asigna una categoría por defecto para mostrar si es null
+                                                            }).ToList();
+
+                productosParaMostrar.AddRange(productosLocalesFiltrados);
+                Console.WriteLine($"DEBUG (Catalogo): Productos locales filtrados por '{categoriaFiltro}' o sin categoría. Cantidad: {productosParaMostrar.Count}");
+            }
+            else
+            {
+                Console.WriteLine($"DEBUG (Catalogo): Error o no hay productos locales: {respuestaLocal.Mensaje}");
+                await Swal.FireAsync("Info", respuestaLocal.Mensaje ?? "No se pudieron cargar los productos locales.", "info");
+            }
+
+            // --- Carga y filtro de productos de FakeStore (FakeProductoServicio) ---
+            Console.WriteLine("DEBUG (Catalogo): Llamando a fakeProductoServicio.ObtenerProductos()");
+            var productosFakeCrudos = await fakeProductoServicio.ObtenerProductos();
+
+            if (productosFakeCrudos != null && productosFakeCrudos.Any())
+            {
+                Console.WriteLine($"DEBUG (Catalogo): Productos de FakeStore recibidos (sin filtrar). Cantidad: {productosFakeCrudos.Count()}");
+
+                // Filtrar productos de FakeStore por categoría Y evitar duplicados.
+                var productosFakeFiltradosYNoDuplicados = productosFakeCrudos
+                                                    .Where(p => p.Category != null && p.Category.Equals(categoriaFiltro, StringComparison.OrdinalIgnoreCase))
+                                                    .Where(p => !productosParaMostrar.Any(
+                                                        existente => existente.ExternalId.HasValue && existente.ExternalId.Value == p.Id))
+                                                    .Select(p => new ProductoParaMostrar
+                                                        {
+                                                            Id = null,
+                                                            ExternalId = p.Id,
+                                                            Titulo = p.Title ?? "Sin Título",
+                                                            Descripcion = p.Description ?? "Sin descripción",
+                                                            Precio = (decimal)p.Price,
+                                                            PorcIva = 0m,
+                                                            Imagen = p.Image ?? "https://placehold.co/200x200/cccccc/ffffff?text=No+Image",
+                                                            Cantidad = 1,
+                                                            Categoria = p.Category
+                                                        }).ToList();
+
+                productosParaMostrar.AddRange(productosFakeFiltradosYNoDuplicados);
+                Console.WriteLine($"DEBUG (Catalogo): Productos de FakeStore filtrados y sin duplicados. Cantidad añadida: {productosFakeFiltradosYNoDuplicados.Count}");
+            }
+            else
+            {
+                Console.WriteLine("DEBUG (Catalogo): No se pudieron cargar productos de FakeStore o la lista está vacía.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ERROR (Catalogo): Excepción en OnInitializedAsync: {ex.Message}");
+            await Swal.FireAsync("Error al cargar productos", ex.Message, "error");
+        }
+        finally
+        {
+            isLoading = false;
+            Console.WriteLine("DEBUG (Catalogo): OnInitializedAsync finalizado. Llamando a StateHasChanged().");
+            StateHasChanged();
+        }
+    }
+
+    private async Task AgregarAlCarrito(ProductoParaMostrar producto)
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity.IsAuthenticated)
+        {
+            var sweetAlertResult = await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Necesitas iniciar sesión",
+                    Text = "Para agregar productos al carrito, debes iniciar sesión o registrarte.",
+                    Icon = "info",
+                    ConfirmButtonText = "Iniciar Sesión",
+                    ShowDenyButton = true,
+                    DenyButtonText = "Registrarse",
+                    ReverseButtons = true
+                });
+
+            if (sweetAlertResult.IsConfirmed)
+            {
+                NavigationManager.NavigateTo("/login");
+            }
+            else if (sweetAlertResult.IsDenied)
+            {
+                NavigationManager.NavigateTo("/registrarse");
+            }
+            else if (sweetAlertResult.IsDismissed)
+            {
+                Console.WriteLine("El usuario cerró la alerta sin seleccionar una opción.");
+            }
+
+            return;
+        }
+
+        if (producto.Cantidad <= 0)
+        {
+            await Swal.FireAsync("Error", "La cantidad debe ser al menos 1.", "warning");
+            return;
+        }
+
+        var productoDTO = new ProductoDTO
+            {
+                PrId = producto.Id ?? 0,
+                PrTitulo = producto.Titulo,
+                PrDescripcion = producto.Descripcion,
+                PrImagen = producto.Imagen,
+                PrValorVenta = producto.Precio,
+                PrPorcIva = producto.PorcIva,
+                PrExternalId = producto.ExternalId, // Asegúrate de que ProductoDTO tenga PrExternalId
+                PrCategoria = producto.Categoria // Pasa la categoría a DTO también
+            };
+
+        var totalItem = producto.Precio * producto.Cantidad;
+
+        var carritoItem = new CarritoDTO
+            {
+                Producto = productoDTO,
+                Cantidad = producto.Cantidad,
+                PrValorVenta = producto.Precio,
+                PorcIva = producto.PorcIva,
+                Total = totalItem
+            };
+
+        try
+        {
+            await carritoServicio.AgregarCarrito(carritoItem);
+            await Swal.FireAsync("Agregado", "Producto agregado al carrito", "success");
+        }
+        catch (Exception ex)
+        {
+            await Swal.FireAsync("Error", $"No se pudo agregar el producto al carrito: {ex.Message}", "error");
+            Console.Error.WriteLine($"Error al agregar al carrito: {ex.Message}");
+        }
+    }
+
+    private void SetHoverState(ProductoParaMostrar producto, bool isHovered)
+    {
+        producto.IsHovered = isHovered;
+        StateHasChanged();
+    }
+
+    private class ProductoParaMostrar
+    {
+        public int? Id { get; set; }
+        public int? ExternalId { get; set; }
+        public string Titulo { get; set; } = "";
+        public string Descripcion { get; set; } = "";
+        public decimal Precio { get; set; }
+        public string Imagen { get; set; } = "";
+        public int Cantidad { get; set; } = 1;
+        public decimal PorcIva { get; set; } = 0m;
+        public bool IsHovered { get; set; } = false;
+        public string? Categoria { get; set; } 
+    }
+}

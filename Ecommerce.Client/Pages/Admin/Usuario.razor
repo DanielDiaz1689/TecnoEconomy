@@ -1,0 +1,311 @@
+﻿@page "/usuario"
+@page "/usuario/{Id:int}"
+
+@using MudBlazor
+@using Ecommerce.DTO
+@using Ecommerce.Client.Servicios.Contrato
+@using System.ComponentModel.DataAnnotations
+@using System.Text.Json
+@inject IUsuarioServicio usuarioServicio
+@inject SweetAlertService Swal
+@inject NavigationManager _navServicio
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+
+    <MudText Typo="Typo.h4" GutterBottom="true">@Titulo</MudText>
+
+
+
+    <EditForm Model="@modelo" OnValidSubmit="GuardarCambios">
+
+        <DataAnnotationsValidator />
+
+        <ValidationSummary />
+
+
+
+        <MudPaper Class="p-4">
+
+            <MudStack Spacing="2">
+
+
+
+                <MudTextField @bind-Value="modelo.UsuNombre" Label="Nombre Completo" Variant="Variant.Outlined"   />
+
+                <ValidationMessage For="@(() => modelo.UsuNombre)" />
+
+
+
+                <MudTextField @bind-Value="modelo.UsuCorreo" Label="Correo" Variant="Variant.Outlined"  
+                                             InputType="InputType.Email" />
+
+                <ValidationMessage For="@(() => modelo.UsuCorreo)" />
+
+
+
+                <MudTextField @bind-Value="modelo.UsuTelefono" Label="Teléfono" Variant="Variant.Outlined"
+                                             InputType="InputType.Number"  
+                                             Pattern="^\d+$" />
+
+                <ValidationMessage For="@(() => modelo.UsuTelefono)" />
+
+
+
+                <MudTextField @bind-Value="modelo.UsuNumeroDocumento" Label="Número de Documento" Variant="Variant.Outlined"
+                                             InputType="InputType.Number"  
+                                             Pattern="^\d+$" />
+
+                <ValidationMessage For="@(() => modelo.UsuNumeroDocumento)" />
+
+
+
+                <MudTextField @bind-Value="modelo.UsuLogin" Label="Nombre de Usuario" Variant="Variant.Outlined"   />
+
+                <ValidationMessage For="@(() => modelo.UsuLogin)" />
+
+
+
+                <MudTextField @bind-Value="modelo.UsuPassword" Label="Contraseña" InputType="InputType.Password"
+                                             Variant="Variant.Outlined"   />
+
+                <ValidationMessage For="@(() => modelo.UsuPassword)" />
+
+
+
+                <MudTextField @bind-Value="modelo.UsuConfirmPassword" Label="Confirmar Contraseña" InputType="InputType.Password"
+                                             Variant="Variant.Outlined"   />
+
+                <ValidationMessage For="@(() => modelo.UsuConfirmPassword)" />
+
+
+
+                <MudSelect T="string" @bind-Value="modelo.UsuRol" Label="Rol" Variant="Variant.Outlined" Required="true" RequiredError="El rol es obligatorio">
+
+                    <MudSelectItem Value="@("administrador")">Administrador</MudSelectItem>
+
+                    <MudSelectItem Value="@("cliente")">Cliente</MudSelectItem>
+
+                </MudSelect>
+
+                <ValidationMessage For="@(() => modelo.UsuRol)" />
+
+
+
+                <MudStack Row="true" Justify="Justify.FlexStart" Spacing="2" Class="mt-4">
+
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" ButtonType="ButtonType.Submit" Style="width:130px">
+
+                        @Boton
+
+                    </MudButton>
+
+                    <MudButton Color="Color.Secondary" Variant="Variant.Filled" Href="/usuarios" Style="width:130px">
+
+                        Volver
+
+                    </MudButton>
+
+                </MudStack>
+
+
+
+            </MudStack>
+
+        </MudPaper>
+
+    </EditForm>
+
+</MudContainer>
+
+
+
+@code {
+
+    [Parameter] public int Id { get; set; }
+
+
+
+    private string Titulo = "Nuevo Usuario";
+
+    private string Boton = "Crear";
+
+
+
+    private UsuarioDTO modelo = new() { UsuRol = "cliente" };
+
+    private UsuarioDTO modeloOriginal = new();
+
+
+
+    protected override async Task OnParametersSetAsync()
+
+    {
+
+        if (Id != 0)
+
+        {
+
+            Titulo = "Editar Usuario";
+
+            Boton = "Actualizar";
+
+
+
+            var response = await usuarioServicio.Obtener(Id);
+
+
+
+            if (response.EsCorrecto && response.Valor is UsuarioDTO u)
+
+            {
+
+                modelo = u;
+
+                modelo.UsuConfirmPassword = modelo.UsuPassword;
+
+                modelo.UsuRol = u.UsuRol.ToLower() == "administrador" ? "administrador" : "cliente";
+
+
+
+                modeloOriginal = ClonarUsuario(modelo); // guardar copia para validación
+
+            }
+
+
+
+            if (!string.IsNullOrWhiteSpace(response.Mensaje))
+
+            {
+
+                await Swal.FireAsync("Información", response.Mensaje, SweetAlertIcon.Info);
+
+            }
+
+        }
+
+    }
+
+
+
+    private async Task GuardarCambios()
+
+    {
+
+        if (Id != 0 && !HayCambios(modelo, modeloOriginal))
+
+        {
+
+            await Swal.FireAsync("Sin cambios", "No se ha realizado ningún cambio.", SweetAlertIcon.Info);
+
+            return;
+
+        }
+
+
+
+        if (modelo.UsuPassword != modelo.UsuConfirmPassword)
+
+        {
+
+            await Swal.FireAsync("Advertencia", "Las contraseñas no coinciden", SweetAlertIcon.Warning);
+
+            return;
+
+        }
+
+
+
+        if (modelo.UsuRol.ToLower() != "cliente" && modelo.UsuRol.ToLower() != "administrador")
+
+        {
+
+            await Swal.FireAsync("Error", "Rol no permitido. Debe ser 'cliente' o 'administrador'", SweetAlertIcon.Error);
+
+            return;
+
+        }
+
+
+
+        modelo.UsuEstado ??= "Activo";
+
+
+
+        bool ok;
+
+        string msg;
+
+        SweetAlertIcon icono;
+
+
+
+        if (Id != 0)
+
+        {
+
+            var r = await usuarioServicio.Editar(modelo);
+
+            ok = r.EsCorrecto;
+
+            msg = ok ? "Usuario modificado correctamente" : "No se pudo editar el usuario";
+
+            icono = ok ? SweetAlertIcon.Success : SweetAlertIcon.Error;
+
+        }
+
+        else
+
+        {
+
+            var r = await usuarioServicio.Crear(modelo);
+
+            ok = r.EsCorrecto;
+
+            msg = ok ? "Usuario creado exitosamente" : "No se pudo crear el usuario";
+
+            icono = ok ? SweetAlertIcon.Success : SweetAlertIcon.Error;
+
+        }
+
+
+
+        await Swal.FireAsync("Resultado", msg, icono);
+
+
+
+        if (ok)
+
+        {
+
+            _navServicio.NavigateTo("/usuarios", forceLoad: true);
+
+        }
+
+    }
+
+
+
+    private UsuarioDTO ClonarUsuario(UsuarioDTO u)
+
+    {
+
+        var json = JsonSerializer.Serialize(u);
+
+        return JsonSerializer.Deserialize<UsuarioDTO>(json)!;
+
+    }
+
+    private bool HayCambios(UsuarioDTO nuevo, UsuarioDTO original)
+    {
+        return nuevo.UsuNombre != original.UsuNombre ||
+               nuevo.UsuCorreo != original.UsuCorreo ||
+               nuevo.UsuTelefono != original.UsuTelefono ||
+               nuevo.UsuNumeroDocumento != original.UsuNumeroDocumento ||
+               nuevo.UsuLogin != original.UsuLogin ||
+               nuevo.UsuPassword != original.UsuPassword ||
+               nuevo.UsuRol?.ToLower() != original.UsuRol?.ToLower();
+    }
+}
+
+
+

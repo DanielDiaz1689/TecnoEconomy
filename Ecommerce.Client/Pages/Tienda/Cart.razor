@@ -1,0 +1,221 @@
+﻿@page "/cart"
+@using Ecommerce.Client.Servicios.Contrato
+@using Ecommerce.DTO
+@inject ICarritoServicio CarritoServicio
+@inject SweetAlertService Swal
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<MudPaper Class="pa-4 mx-auto" Style="max-width: 1000px;">
+    <MudText Typo="Typo.h5">Carrito de compras</MudText>
+
+    @if (carrito == null || carrito.Count == 0)
+    {
+        <MudText Class="mt-4">No hay productos en el carrito.</MudText>
+        <MudButton Href="/catalogo" Color="Color.Primary" Variant="Variant.Filled" Class="mt-4">
+            Ir a la tienda
+        </MudButton>
+    }
+    else
+    {
+        <div class="d-flex flex-row justify-between gap-4 mt-4">
+            <div style="flex: 2;">
+                <MudTable Items="carrito" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Producto</MudTh>
+                        <MudTh>Cantidad</MudTh>
+                        <MudTh>Precio Unit.</MudTh>
+                        <MudTh>IVA (%)</MudTh>
+                        <MudTh>Subtotal</MudTh>
+                        <MudTh>Total</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Producto">@context.Producto?.PrTitulo</MudTd>
+                        <MudTd DataLabel="Cantidad">
+                            @context.Cantidad
+                        </MudTd>
+                        <MudTd DataLabel="Precio Unit.">@context.PrValorVenta?.ToString("C")</MudTd>
+                        <MudTd DataLabel="IVA (%)">@IVA_PORCENTAJE.ToString("0.##")%</MudTd>
+                        <MudTd DataLabel="Subtotal">@((context.PrValorVenta * context.Cantidad)?.ToString("C"))</MudTd>
+                        <MudTd DataLabel="Total">@(CalcularTotalConIVA(context).ToString("C"))</MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => EliminarItem(context.Producto.PrId))" />
+                        </MudTd>
+                    </RowTemplate>
+                    <FooterContent>
+                        <MudTr>
+                            <MudTh ColSpan="5" Class="text-right">Total a pagar:</MudTh>
+                            <MudTh><b>@TotalGeneralCarrito.ToString("C")</b></MudTh>
+                            <MudTh></MudTh>
+                        </MudTr>
+                    </FooterContent>
+                </MudTable>
+
+                <MudButton Color="Color.Error" Variant="Variant.Outlined" OnClick="VaciarCarrito" Class="mt-4">
+                    Vaciar carrito
+                </MudButton>
+            </div>
+
+            <div style="flex: 1;">
+                <EditForm Model="@tarjeta" OnValidSubmit="ProcesarPago">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <MudPaper Class="pa-4">
+                        <MudText Typo="Typo.h6" Class="mb-2">Datos de la Tarjeta</MudText>
+
+                        <MudTextField @bind-Value="tarjeta.Titular"
+                                      Label="Nombre Titular"
+                                      FullWidth="true"
+                                      Required="true"
+                                      RequiredError="El nombre del titular es requerido."
+                                      For="@(() => tarjeta.Titular)"
+                                      Placeholder="Ej: Juan Pérez" />
+
+                        <MudTextField @bind-Value="tarjeta.Numero"
+                                      Label="Número Tarjeta"
+                                      FullWidth="true"
+                                      Required="true"
+                                      RequiredError="El número de tarjeta es requerido."
+                                      InputType="InputType.Text"
+                                      MaxLength="19"
+                                      For="@(() => tarjeta.Numero)"
+                                      Placeholder="Ej: 1234 5678 9012 3456" />
+
+                        <div class="d-flex justify-between mt-2">
+                            <MudTextField @bind-Value="tarjeta.Vigencia"
+                                          Label="Vigencia (MM/AA)"
+                                          Required="true"
+                                          RequiredError="La vigencia es requerida."
+                                          Style="width: 48%;"
+                                          MaxLength="5"
+                                          For="@(() => tarjeta.Vigencia)"
+                                          Placeholder="MM/AA" />
+
+                            <MudTextField @bind-Value="tarjeta.CVV"
+                                          Label="CVV"
+                                          Required="true"
+                                          RequiredError="El CVV es requerido."
+                                          Style="width: 48%;"
+                                          InputType="InputType.Password"
+                                          MaxLength="4"
+                                          For="@(() => tarjeta.CVV)"
+                                          Placeholder="Ej: 123" />
+                        </div>
+
+                        <MudText Typo="Typo.subtitle1" Class="mt-3">
+                            Total a pagar: <b>@TotalGeneralCarrito.ToString("C")</b>
+                        </MudText>
+
+                        <MudButton Color="Color.Primary" FullWidth="true" Class="mt-2" ButtonType="ButtonType.Submit">
+                            Procesar pago
+                        </MudButton>
+                    </MudPaper>
+                </EditForm>
+            </div>
+        </div>
+    }
+</MudPaper>
+
+@code {
+    private List<CarritoDTO> carrito = new();
+    private TarjetaDTO tarjeta = new();
+    private const decimal IVA_PORCENTAJE = 19m;
+
+    private decimal TotalGeneralCarrito => carrito.Sum(x => CalcularTotalConIVA(x));
+
+    protected override async Task OnInitializedAsync()
+    {
+        CarritoServicio.MostrarItems += OnCarritoChanged;
+        await CargarCarrito();
+    }
+
+    private async void OnCarritoChanged()
+    {
+        await CargarCarrito();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        CarritoServicio.MostrarItems -= OnCarritoChanged;
+    }
+
+    private async Task CargarCarrito()
+    {
+        carrito = await CarritoServicio.DevolverCarrito();
+    }
+
+    private decimal CalcularTotalConIVA(CarritoDTO item)
+    {
+        decimal precio = item.PrValorVenta.GetValueOrDefault();
+        int cantidad = item.Cantidad.GetValueOrDefault();
+        decimal subtotal = precio * cantidad;
+        decimal totalConIVA = subtotal + (subtotal * (IVA_PORCENTAJE / 100m));
+        return totalConIVA;
+    }
+
+    private async Task EliminarItem(int idProducto)
+    {
+        var confirm = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "¿Eliminar producto?",
+                Text = "¿Estás seguro de que quieres quitar este producto del carrito?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Sí, eliminar",
+                CancelButtonText = "No, cancelar"
+            });
+
+        if (confirm.IsConfirmed)
+        {
+            await CarritoServicio.EliminarCarrito(idProducto);
+            await CargarCarrito();
+            await Swal.FireAsync("Eliminado", "Producto eliminado del carrito.", SweetAlertIcon.Success);
+        }
+    }
+
+    private async Task VaciarCarrito()
+    {
+        var confirm = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "¿Vaciar carrito?",
+                Text = "¿Estás seguro de que quieres vaciar todo el carrito de compras?",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Sí, vaciar",
+                CancelButtonText = "No, cancelar"
+            });
+
+        if (confirm.IsConfirmed)
+        {
+            await CarritoServicio.VaciarCarrito();
+            carrito.Clear();
+            await Swal.FireAsync("Carrito Vaciado", "Tu carrito ha sido vaciado.", SweetAlertIcon.Success);
+        }
+    }
+
+    private async Task ProcesarPago()
+    {
+        if (!carrito.Any())
+        {
+            await Swal.FireAsync("Carrito Vacío", "No hay productos en el carrito para procesar el pago.", SweetAlertIcon.Warning);
+            return;
+        }
+
+        bool pagoExitoso = true;
+
+        if (pagoExitoso)
+        {
+            await Swal.FireAsync("Pago Procesado", "Tu pago ha sido procesado exitosamente.", SweetAlertIcon.Success);
+            await CarritoServicio.VaciarCarrito();
+            tarjeta = new TarjetaDTO();
+            NavigationManager.NavigateTo("/catalogo");
+        }
+        else
+        {
+            await Swal.FireAsync("Error de Pago", "No se pudo procesar el pago. Por favor, intenta de nuevo o verifica tus datos.", SweetAlertIcon.Error);
+        }
+    }
+}

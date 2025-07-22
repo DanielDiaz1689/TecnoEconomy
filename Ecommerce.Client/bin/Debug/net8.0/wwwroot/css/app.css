@@ -1,0 +1,115 @@
+﻿
+html, body {
+    font-family: 'Roboto', sans-serif;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #f0f2f5; 
+}
+
+h2 {
+    color: var(--mud-palette-primary);
+    font-weight: 700;
+}
+
+/* --- ESTILOS PARA LAS TARJETAS DE PRODUCTO --- */
+
+/* Contenedor externo de la tarjeta: define el tamaño fijo y maneja los efectos de hover */
+.product-card-outer-wrapper {
+    height: 480px; /* ALTURA FIJA:  */
+    width: 100%; /* Ocupa el 100% del MudItem */
+    display: flex; /* Para que MudCard ocupe toda la altura */
+    flex-direction: column;
+    position: relative;
+    overflow: hidden; /* Muy importante para ocultar contenido durante la animación */
+    border-radius: 12px;
+    background-color: var(--mud-palette-surface); /* Fondo del MudCard */
+    box-shadow: var(--mud-elevation-6); /* Sombra inicial */
+    cursor: pointer;
+    /* Transiciones para la sombra y la transformación al hacer hover */
+    transition: box-shadow 0.3s ease-out, transform 0.3s ease-out;
+}
+
+    /* Efecto al pasar el ratón sobre el contenedor de la tarjeta */
+    .product-card-outer-wrapper:hover {
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3); /* Sombra más pronunciada */
+        transform: translateY(-8px) scale(1.03); /* Se eleva más y agranda un poco más */
+    }
+
+    /* Estilo para el MudCard interno (que ocupa todo el wrapper) */
+    .product-card-outer-wrapper .mud-card {
+        height: 100% !important; /* Fuerza al MudCard a ocupar toda la altura del wrapper */
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        background-color: transparent !important; /* Asegura que el fondo del wrapper sea visible */
+        padding: 0 !important; /* Elimina cualquier padding por defecto de MudCard */
+    }
+
+    /* Estilo para el contenido de la tarjeta */
+    .product-card-outer-wrapper .mud-card-content {
+        flex-grow: 1; /* Permite que el contenido se estire */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 16px !important; /* Asegura un padding consistente dentro del contenido */
+    }
+
+/* Imagen del producto */
+.product-image-display {
+    width: 100% !important;
+    height: 200px !important; /* Altura fija para la imagen */
+    object-fit: contain !important;
+    border-bottom: 1px solid var(--mud-palette-lines);
+    background-color: #ffffff; /* Fondo blanco para las imágenes */
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+/* Texto del título */
+.product-title-text {
+    min-height: 50px; /* Altura mínima para títulos de una o dos líneas */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    font-size: 1.15rem; /* Fuente un poco más grande */
+}
+
+/* Contenedor de la descripción: oculta por defecto */
+.product-description-content-wrapper {
+    max-height: 0; /* Oculta el contenido */
+    opacity: 0; /* Lo hace invisible */
+    overflow: hidden; /* Esconde cualquier contenido que desborde */
+    padding: 0 8px; /* Padding horizontal para el texto */
+    margin-top: 0;
+    /* Transición suave y más notable */
+    transition: max-height 0.6s ease-in-out, opacity 0.6s ease-in-out, margin-top 0.6s ease-in-out;
+}
+
+    /* Estado de la descripción al pasar el ratón (se muestra) */
+    .product-description-content-wrapper.show-description {
+        max-height: 120px; /*  Altura máxima para la descripción  */
+        opacity: 1; /* Hace la descripción visible */
+        padding-top: 8px; /* Restaura el padding superior */
+        padding-bottom: 8px; /* Restaura el padding inferior */
+        margin-top: 8px; /* Añade un margen superior para separar del título */
+    }
+
+/* Ajustes para el campo de cantidad */
+.mud-numeric-field {
+    min-width: 80px; /* Asegura un ancho mínimo para el campo */
+}
+
+/* Estilo para el botón "Agregar al Carrito" */
+.mud-button-add-to-cart {
+    border-radius: 8px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+}
+
+    .mud-button-add-to-cart:hover {
+        transform: translateY(-2px);
+    }

@@ -1,0 +1,67 @@
+﻿@page "/"
+@inject NavigationManager Navigation
+
+
+<div class="full-screen-background">
+    <div class="content-wrapper">
+        @* Mantenemos este contenedor para centrar y bajar el botón *@
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Class="welcome-button" OnClick="@(() => Navigation.NavigateTo("/catalogo"))">
+            Haz clic aquí
+        </MudButton>
+    </div>
+</div>
+
+<style>
+    /* Contenedor principal que cubre toda la pantalla y muestra la imagen de fondo */
+    .full-screen-background {
+        position: fixed; /* Ocupa toda la ventana visible */
+        top: 0;
+        left: 0;
+        width: 100vw; /* 100% del ancho del viewport */
+        height: 100vh; /* 100% del alto del viewport */
+        background-image: url('/ImagenesCliente/fondo_inicio.png'); /* Ruta corregida para tu imagen */
+        background-size: cover; /* Ajusta la imagen para cubrir todo el contenedor */
+        background-position: center; /* Centra la imagen */
+        background-repeat: no-repeat; /* Evita que la imagen se repita */
+        /* --- CAMBIOS AQUÍ PARA POSICIONAR EL BOTÓN SOLO HACIA ABAJO --- */
+        display: flex; /* Usamos flexbox */
+        justify-content: center; /* Centra horizontalmente el contenido */
+        align-items: flex-end; /* Alinea el contenido al final (parte inferior) */
+        /* --- FIN CAMBIOS --- */
+
+        z-index: -1; /* Asegura que esté detrás de otros elementos si los hay */
+    }
+
+    /* Contenedor para envolver el botón y aplicarle un margen para ajustarlo */
+    .content-wrapper {
+        text-align: center; /* Centra el botón si hay varios elementos */
+        margin-bottom: 30vh; /* Ajusta este valor para mover el botón hacia arriba desde el borde inferior */
+        /* Puedes usar px, rem, % o vh/vw según tus necesidades. */
+        /* Por ejemplo, 10vh lo sube un 10% de la altura del viewport. */
+    }
+
+    /* Estilos del botón */
+    .welcome-button.mud-button-root {
+        /* Para el fondo del botón si quieres cambiarlo */
+        background-color: #000080;
+    }
+
+        .welcome-button.mud-button-root .mud-button-label {
+            color: white !important; /* Fuerza el color blanco del texto del botón */
+            font-size: 1.2rem; /* Opcional: Aumentar el tamaño del texto */
+        }
+
+    /*
+         * Limpieza de estilos anteriores si ya no se usan.
+         * Asegúrate de que no haya reglas conflictivas de estos selectores.
+         */
+    .inicio-container,
+    .inicio-paper,
+    .inicio-titulo,
+    .button-container { /* Eliminamos este selecto si ya no lo usamos en el HTML */
+        /* display: none; */ /* O simplemente eliminar estas reglas si no las necesitas */
+    }
+</style>
+
+
+

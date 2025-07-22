@@ -1,0 +1,177 @@
+﻿@page "/productos"
+@using Ecommerce.DTO
+@using Ecommerce.Client.Servicios.Contrato
+@using Ecommerce.Servicio.Implementacion
+@inject IProductoClienteServicio productoServicio
+@inject IFakeProductoServicio fakeProductoServicio
+@inject SweetAlertService Swal
+@inject IJSRuntime JS
+
+<MudPaper Class="p-4">
+    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.SpaceBetween" Wrap="Wrap.Wrap">
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/admin/producto">
+            Nuevo producto
+        </MudButton>
+
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ImportarProductosFakeStore">
+            Importar Productos
+        </MudButton>
+
+        <MudTextField @bind-Value="buscar"
+                      Placeholder="Buscar producto..."
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Class="w-50"
+                      Immediate="true"
+                      OnKeyDown="HandleKeyPress">
+        </MudTextField>
+    </MudStack>
+</MudPaper>
+
+@if (lista is not null)
+{
+    <MudGrid Class="mt-4" Gutter="GutterSize.Gutter4">
+        @foreach (var item in lista)
+        {
+            <MudItem xs="12" sm="6" md="4" xl="3">
+                <MudCard Class="h-100">
+                    <MudCardMedia Image="@item.PrImagen" Height="200" />
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6" Align="Align.Center">@item.PrTitulo</MudText>
+                        <MudText Typo="Typo.subtitle1" Color="Color.Success" Align="Align.Center">
+                            $ @((item.PrValorVenta ?? 0).ToString("N2"))
+                        </MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" Href="@($"/admin/producto/{item.PrId}")">
+                            <MudIcon Icon="@Icons.Material.Filled.Edit" />
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" OnClick="async () => await Eliminar(item)">
+                            <MudIcon Icon="@Icons.Material.Filled.Delete" />
+                        </MudButton>
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+else
+{
+    <div class="text-center mt-4">
+        <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+    </div>
+}
+
+@code {
+    private List<ProductoDTO>? lista = null;
+    private string buscar = "";
+    private int cantidadSeleccionada = 5;
+
+    private async Task ImportarProductosFakeStore()
+    {
+        var resultado = await productoServicio.ImportarDesdeFakeStore();
+
+        if (resultado.EsCorrecto)
+        {
+            await Swal.FireAsync("¡Importado!", resultado.Mensaje ?? "Productos importados con éxito", SweetAlertIcon.Success);
+            await ObtenerProductos();
+        }
+        else
+        {
+            await Swal.FireAsync("Error", resultado.Mensaje ?? "Error al importar productos", SweetAlertIcon.Error);
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await ObtenerProductos(buscar);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await MostrarMensajeDesdeLocalStorage();
+        await ObtenerProductos();
+    }
+
+    private async Task ObtenerProductos(string valor = "")
+    {
+        var response = await productoServicio.Lista(valor);
+
+        if (response.EsCorrecto && response.Valor is List<ProductoDTO> productos)
+        {
+            lista = productos.Where(p => p.PrEstado == "A").ToList();
+        }
+        else
+        {
+            lista = new List<ProductoDTO>();
+            await Swal.FireAsync("Error", response.Mensaje ?? "No se pudo obtener la lista de productos.", SweetAlertIcon.Error);
+        }
+    }
+
+    private async Task Eliminar(ProductoDTO modelo)
+    {
+        var result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "¿Estás seguro?",
+                Text = $"Eliminar producto: {modelo.PrTitulo}",
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Sí, eliminar",
+                CancelButtonText = "Cancelar"
+            });
+
+        if (result.IsConfirmed)
+        {
+            modelo.PrEstado = "I";
+            var response = await productoServicio.Editar(modelo);
+            try
+            {
+                if (response.EsCorrecto)
+                {
+                    await Swal.FireAsync("¡Desactivado!", response.Mensaje ?? "El producto fue desactivado correctamente.", SweetAlertIcon.Success);
+                    await ObtenerProductos();
+                }
+                else
+                {
+                    await Swal.FireAsync("Error", response.Mensaje ?? "Error al desactivar el producto.", SweetAlertIcon.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                await Swal.FireAsync("Error", $"Ocurrió un error inesperado al desactivar el producto: {ex.Message}", SweetAlertIcon.Error);
+                Console.Error.WriteLine($"Error al desactivar producto: {ex.Message}");
+            }
+            
+        }
+
+
+    }
+
+    private async Task MostrarMensajeDesdeLocalStorage()
+    {
+        string mensaje = await JS.InvokeAsync<string>("localStorage.getItem", "mensajeExitoProducto");
+
+        if (!string.IsNullOrWhiteSpace(mensaje))
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", "mensajeExitoProducto");
+            await Swal.FireAsync("¡Éxito!", mensaje, SweetAlertIcon.Success);
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

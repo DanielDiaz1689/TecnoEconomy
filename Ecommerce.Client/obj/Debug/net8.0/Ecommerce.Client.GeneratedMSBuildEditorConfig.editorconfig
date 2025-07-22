@@ -1,0 +1,119 @@
+is_global = true
+build_property.EnableAotAnalyzer = 
+build_property.EnableSingleFileAnalyzer = 
+build_property.EnableTrimAnalyzer = false
+build_property.IncludeAllContentForSelfExtract = 
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = false
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = browser
+build_property.RootNamespace = Ecommerce.Client
+build_property.RootNamespace = Ecommerce.Client
+build_property.ProjectDir = C:\Proyecto Ecommerce\Ecommerce\Ecommerce.Client\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = false
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = C:\Proyecto Ecommerce\Ecommerce\Ecommerce.Client
+build_property._RazorSourceGeneratorDebug = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/App.razor]
+build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Layout/LoginLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XExvZ2luTGF5b3V0LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XE1haW5MYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XE5hdk1lbnUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Admin/Categoria.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cQ2F0ZWdvcmlhLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Admin/Categorias.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cQ2F0ZWdvcmlhcy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Admin/Component.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cQ29tcG9uZW50LnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Admin/Dashboard.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cRGFzaGJvYXJkLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Admin/Producto.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cUHJvZHVjdG8ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Admin/Productos.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cUHJvZHVjdG9zLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Admin/Usuario.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cVXN1YXJpby5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Admin/Usuarios.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWRtaW5cVXN1YXJpb3MucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Autorizacion/Login.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQXV0b3JpemFjaW9uXExvZ2luLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Autorizacion/Registro.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQXV0b3JpemFjaW9uXFJlZ2lzdHJvLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/DialogProducto.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRGlhbG9nUHJvZHVjdG8ucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Index.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSW5kZXgucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Inicio.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSW5pY2lvLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Tienda/Cart.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGllbmRhXENhcnQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Tienda/Catalogo.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGllbmRhXENhdGFsb2dvLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Tienda/Compra.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGllbmRhXENvbXByYS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Tienda/Detalle.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGllbmRhXERldGFsbGUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Pages/Tienda/Venta.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVGllbmRhXFZlbnRhLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/Routes.razor]
+build_metadata.AdditionalFiles.TargetPath = Um91dGVzLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Proyecto Ecommerce/Ecommerce/Ecommerce.Client/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = X0ltcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 

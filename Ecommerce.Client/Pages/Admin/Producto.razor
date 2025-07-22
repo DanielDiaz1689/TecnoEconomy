@@ -1,0 +1,252 @@
+﻿@page "/admin/producto"
+@page "/admin/producto/{Id:int}"
+
+@using Ecommerce.DTO
+@using Ecommerce.Client.Servicios.Contrato
+@using MudBlazor
+@using CurrieTechnologies.Razor.SweetAlert2
+@using System.Text.Json
+@inject IProductoClienteServicio productoServicio
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+@inject SweetAlertService Swal
+
+<MudPaper Class="p-4 mx-auto mt-5" Style="max-width:600px;">
+    <MudText Typo="Typo.h5" Class="mb-4">@(Id.HasValue && Id.Value != 0 ? "Editar producto" : "Nuevo producto")</MudText>
+
+    <MudForm @ref="_form" OnValidSubmit="GuardarCambios">
+        <MudTextField Label="Título"
+                      @bind-Value="modeloProducto.PrTitulo"
+                      Required="true"
+                      RequiredError="El título es obligatorio" />
+
+        <MudTextField Label="Descripción"
+                      @bind-Value="modeloProducto.PrDescripcion"
+                      Required="true"
+                      RequiredError="La descripción es obligatoria"
+                      Lines="3"
+                      TextArea="true" />
+
+        <MudNumericField T="decimal?" Label="Valor Venta"
+                         @bind-Value="modeloProducto.PrValorVenta"
+                         Required="true"
+                         RequiredError="El valor es obligatorio"
+                         Adornment="Adornment.Start"
+                         AdornmentText="S/." />
+
+        <MudNumericField T="decimal?" Label="Saldo"
+                         @bind-Value="modeloProducto.PrSaldo"
+                         Required="true"
+                         RequiredError="El saldo es obligatorio" />
+
+        <MudTextField @bind-Value="modeloProducto.PrEstado"
+                      Label="Estado"
+                      ReadOnly="true" />
+
+        <MudDivider Class="my-4" />
+
+        <MudText Typo="Typo.subtitle2">Seleccionar Imagen</MudText>
+        <InputFile OnChange="CargarImagen" />
+
+        @if (!string.IsNullOrWhiteSpace(imagenPreview))
+        {
+            <div class="mt-3">
+                <MudText Typo="Typo.caption">Vista previa:</MudText>
+                <img src="@imagenPreview" alt="Imagen seleccionada" style="max-width: 100%; height: auto;" />
+            </div>
+        }
+
+        <MudButton OnClick="GuardarCambios" Color="Color.Primary" Class="mt-4">
+            Guardar
+        </MudButton>
+        @* *** CORRECCIÓN FINAL DE SINTAXIS AQUI: Llamada directa a un método creado en @code para NavigationManager *** *@
+        <MudButton OnClick="NavegarAListaProductos" Color="Color.Secondary" Class="mt-4 ml-2">
+            Cancelar
+        </MudButton>
+    </MudForm>
+</MudPaper>
+
+@code {
+    private MudForm _form;
+
+    [Parameter]
+    public int? Id { get; set; }
+
+    private ProductoDTO modeloProducto = new()
+        {
+            PrValorVenta = 0m,
+            PrSaldo = 0m,
+            PrEstado = "A"
+        };
+
+    private ProductoDTO modeloOriginal = new();
+
+    private IBrowserFile? imagenSeleccionada;
+    private string? imagenPreview;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"DEBUG (Admin/Producto): OnInitializedAsync - Id: {Id}");
+        if (Id.HasValue && Id.Value != 0)
+        {
+            try
+            {
+                Console.WriteLine($"DEBUG (Admin/Producto): Intentando obtener producto con ID: {Id.Value}");
+                var respuesta = await productoServicio.Obtener(Id.Value);
+
+                Console.WriteLine($"DEBUG (Admin/Producto): Respuesta obtener producto - EsCorrecto: {respuesta.EsCorrecto}, Resultado es null: {respuesta.Resultado == null}");
+
+                if (respuesta.EsCorrecto && respuesta.Resultado is not null)
+                {
+                    modeloProducto = respuesta.Resultado;
+                    imagenPreview = modeloProducto.PrImagen;
+                    modeloOriginal = ClonarProducto(modeloProducto);
+                    Console.WriteLine($"DEBUG (Admin/Producto): Producto '{modeloProducto.PrTitulo}' cargado exitosamente.");
+                }
+                else
+                {
+                    var msg = respuesta.Mensaje ?? "No se pudo cargar el producto para editar (mensaje no disponible).";
+                    await Swal.FireAsync("Error", msg, SweetAlertIcon.Error);
+                    Console.Error.WriteLine($"ERROR (Admin/Producto): Fallo al cargar producto: {msg}");
+                    NavigationManager.NavigateTo("/productos");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Swal.FireAsync("Error", $"Ocurrió un error al cargar el producto: {ex.Message}", SweetAlertIcon.Error);
+                Console.Error.WriteLine($"ERROR (Admin/Producto): Excepción en OnInitializedAsync: {ex.Message}");
+                NavegarAListaProductos(); // Redirigir en caso de error
+                // NavigationManager.NavigateTo("/productos"); // Ya no es necesario, el método NavegarAListaProductos lo hace
+            }
+        }
+        else
+        {
+            Console.WriteLine("DEBUG (Admin/Producto): Modo de creación de nuevo producto.");
+            modeloOriginal = ClonarProducto(modeloProducto);
+        }
+    }
+
+    private async Task CargarImagen(InputFileChangeEventArgs e)
+    {
+        imagenSeleccionada = e.File;
+        if (imagenSeleccionada != null)
+        {
+            if (imagenSeleccionada.Size > 5 * 1024 * 1024)
+            {
+                await Swal.FireAsync("Error", "La imagen es demasiado grande (máximo 5MB).", SweetAlertIcon.Error);
+                imagenSeleccionada = null;
+                imagenPreview = null;
+                return;
+            }
+
+            var buffer = new byte[imagenSeleccionada.Size];
+            await imagenSeleccionada.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).ReadAsync(buffer);
+            imagenPreview = $"data:{imagenSeleccionada.ContentType};base64,{Convert.ToBase64String(buffer)}";
+        }
+    }
+
+    private async Task GuardarCambios()
+    {
+        Console.WriteLine("DEBUG (Admin/Producto): GuardarCambios iniciado.");
+
+        if (Id.HasValue && Id.Value != 0 && !HayCambios(modeloProducto, modeloOriginal) && imagenSeleccionada == null)
+        {
+            await Swal.FireAsync("Sin cambios", "No se ha realizado ningún cambio en el producto.", SweetAlertIcon.Info);
+            Console.WriteLine("DEBUG (Admin/Producto): No se detectaron cambios.");
+            return;
+        }
+
+        await _form.Validate();
+
+        if (!_form.IsValid)
+        {
+            await Swal.FireAsync("Formulario inválido", "Por favor, revisa los campos requeridos.", SweetAlertIcon.Warning);
+            Console.WriteLine("DEBUG (Admin/Producto): Formulario inválido.");
+            return;
+        }
+
+        try
+        {
+            if (imagenSeleccionada is not null)
+            {
+                Console.WriteLine("DEBUG (Admin/Producto): Subiendo imagen...");
+                var respImg = await productoServicio.SubirImagen(imagenSeleccionada);
+                if (respImg.EsCorrecto && !string.IsNullOrWhiteSpace(respImg.Resultado))
+                {
+                    modeloProducto.PrImagen = respImg.Resultado;
+                    Console.WriteLine($"DEBUG (Admin/Producto): Imagen subida: {modeloProducto.PrImagen}");
+                }
+                else
+                {
+                    await Swal.FireAsync("Error", respImg.Mensaje ?? "No se pudo subir la imagen.", SweetAlertIcon.Error);
+                    Console.Error.WriteLine($"ERROR (Admin/Producto): Fallo al subir imagen: {respImg.Mensaje}");
+                    return;
+                }
+            }
+
+            ResponseDTO<ProductoDTO> respuesta;
+            if (Id.HasValue && Id.Value != 0)
+            {
+                Console.WriteLine("DEBUG (Admin/Producto): Llamando a productoServicio.Editar().");
+                respuesta = await productoServicio.Editar(modeloProducto);
+            }
+            else
+            {
+                Console.WriteLine("DEBUG (Admin/Producto): Llamando a productoServicio.Crear().");
+                modeloProducto.PrNegoId ??= 1;
+                modeloProducto.PrUsuId ??= 1;
+                modeloProducto.PrPorcIva ??= 19m;
+                modeloProducto.PrEstado ??= "A";
+                modeloProducto.PrFecha ??= DateTime.Now;
+                respuesta = await productoServicio.Crear(modeloProducto);
+            }
+
+            Console.WriteLine($"DEBUG (Admin/Producto): Respuesta guardar - EsCorrecto: {respuesta.EsCorrecto}, Mensaje: '{respuesta.Mensaje}'");
+
+            if (respuesta.EsCorrecto)
+            {
+                string mensaje = (Id.HasValue && Id.Value != 0)
+                    ? respuesta.Mensaje ?? "Producto actualizado correctamente."
+                    : respuesta.Mensaje ?? "Producto creado correctamente.";
+
+                await JS.InvokeVoidAsync("localStorage.setItem", "mensajeExitoProducto", mensaje);
+                Console.WriteLine($"DEBUG (Admin/Producto): Mensaje de éxito guardado en LocalStorage: '{mensaje}'");
+                NavegarAListaProductos(); // Redirige a la lista de productos
+            }
+            else
+            {
+                await Swal.FireAsync("Error", respuesta.Mensaje ?? "Error al guardar el producto (mensaje no disponible).", SweetAlertIcon.Error);
+                Console.Error.WriteLine($"ERROR (Admin/Producto): Fallo al guardar: {respuesta.Mensaje}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Swal.FireAsync("Error inesperado", $"Ocurrió un error: {ex.Message}", SweetAlertIcon.Error);
+            Console.Error.WriteLine($"ERROR (Admin/Producto): Excepción en GuardarCambios: {ex.Message}");
+        }
+    }
+
+    // Nuevo método para manejar la navegación y evitar problemas de sintaxis de lambda
+    private void NavegarAListaProductos()
+    {
+        NavigationManager.NavigateTo("/productos");
+    }
+
+    private ProductoDTO ClonarProducto(ProductoDTO producto)
+    {
+        var json = JsonSerializer.Serialize(producto);
+        return JsonSerializer.Deserialize<ProductoDTO>(json)!;
+    }
+
+    private bool HayCambios(ProductoDTO nuevo, ProductoDTO original)
+    {
+        return !(nuevo.PrTitulo?.Equals(original.PrTitulo) ?? (original.PrTitulo == null)) ||
+               !(nuevo.PrDescripcion?.Equals(original.PrDescripcion) ?? (original.PrDescripcion == null)) ||
+               nuevo.PrValorVenta != original.PrValorVenta ||
+               nuevo.PrSaldo != original.PrSaldo ||
+               !(nuevo.PrCategoria?.Equals(original.PrCategoria) ?? (original.PrCategoria == null)) ||
+               !(nuevo.PrImagen?.Equals(original.PrImagen) ?? (original.PrImagen == null)) ||
+               !(nuevo.PrEstado?.Equals(original.PrEstado) ?? (original.PrEstado == null)) ||
+               nuevo.PrPorcIva != original.PrPorcIva;
+    }
+}

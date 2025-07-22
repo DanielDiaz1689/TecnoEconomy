@@ -1,0 +1,95 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization 
+@using Ecommerce.Client.Extensiones 
+@using Ecommerce.Client.Servicios.Contrato 
+
+@inject NavigationManager Navigation
+@inject SweetAlertService Swal
+@inject ICarritoServicio carritoServicio 
+
+
+
+<MudNavMenu Class="mud-theme-background px-2 py-3">
+
+    <MudText Typo="Typo.h6" Class="ps-2 mb-4 mud-text-primary">TecnoEconomy</MudText>
+
+    @* Enlaces siempre visibles (públicos) *@
+    <MudNavLink Href="catalogo" Icon="@Icons.Material.Filled.Store" Match="NavLinkMatch.All">
+        Tienda
+    </MudNavLink>
+
+    
+    <AuthorizeView Roles="administrador">
+        @* CORREGIDO: "administrador" en minúsculas *@
+        <Authorized>
+            <MudDivider Class="my-2" />
+            <MudText Typo="Typo.subtitle2" Class="ps-2 mt-2 mud-text-primary">Administrador</MudText>
+
+            @* <MudNavLink Href="/dashboard" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink> *@
+            <MudNavLink Href="/usuarios" Icon="@Icons.Material.Filled.People">Usuarios</MudNavLink>
+            <MudNavLink Href="/productos" Icon="@Icons.Material.Filled.Inventory">Productos</MudNavLink>
+            <MudNavLink Href="/venta" Icon="@Icons.Material.Filled.PointOfSale">Ventas</MudNavLink>
+            <MudNavLink Href="/compra" Icon="@Icons.Material.Filled.ShoppingBag">Compras</MudNavLink>
+        </Authorized>
+    </AuthorizeView>
+
+    
+    <AuthorizeView Roles="cliente">
+        @* CORREGIDO: "cliente" en minúsculas *@
+        <Authorized>
+            <MudDivider Class="my-2" />
+            <MudText Typo="Typo.subtitle2" Class="ps-2 mt-2 mud-text-primary">Cliente</MudText>
+
+            <MudNavLink Href="cart" Icon="@Icons.Material.Filled.ShoppingCart">
+                Carrito
+                @if (cantidadCarrito > 0)
+                {
+                    <MudBadge Color="Color.Primary" Content="@cantidadCarrito" Class="ms-2" />
+                }
+            </MudNavLink>
+            @* <MudNavLink Href="mispedidos" Icon="@Icons.Material.Filled.ShoppingCart">Mis Pedidos</MudNavLink>
+            <MudNavLink Href="miperfil" Icon="@Icons.Material.Filled.Person">Mi Perfil</MudNavLink> *@
+        </Authorized>
+    </AuthorizeView>
+
+    @* Enlace de Iniciar Sesión para no autenticados, si lo deseas en el NavMenu también *@
+    <AuthorizeView>
+        <NotAuthorized>
+            <MudDivider Class="my-2" />
+            <MudNavLink Href="login" Icon="@Icons.Material.Filled.Login">Iniciar sesión</MudNavLink>
+        </NotAuthorized>
+    </AuthorizeView>
+
+    @* El botón de Salir ya no va aquí, se movió al MainLayout *@
+
+</MudNavMenu>
+
+@code {
+    private int cantidadCarrito = 0;
+
+    protected override void OnInitialized()
+    {
+        // Esto solo se ejecutará si ICarritoServicio está correctamente inyectado.
+        // Asegúrate de que ICarritoServicio y su implementación estén registrados en Program.cs
+        // (por ejemplo: services.AddScoped<ICarritoServicio, CarritoServicio>())
+        if (carritoServicio != null)
+        {
+            carritoServicio.MostrarItems += ActualizarCantidad;
+            cantidadCarrito = carritoServicio.CantidadProductos();
+        }
+    }
+
+    private void ActualizarCantidad()
+    {
+        cantidadCarrito = carritoServicio.CantidadProductos();
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        // Asegúrate de limpiar la suscripción solo si carritoServicio no es null
+        if (carritoServicio != null)
+        {
+            carritoServicio.MostrarItems -= ActualizarCantidad;
+        }
+    }
+}

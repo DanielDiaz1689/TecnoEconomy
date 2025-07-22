@@ -1,0 +1,142 @@
+﻿@page "/login"
+@using Ecommerce.Client.Extensiones 
+@using Ecommerce.Client.Servicios.Contrato
+@using Ecommerce.DTO
+@inject ILoginServicio loginServicio
+@inject NavigationManager Navigation 
+@inject SweetAlertService Swal 
+
+<MudPaper Class="mx-auto mt-12 p-6" Style="max-width: 400px;" Elevation="6">
+    <MudText Typo="Typo.h5" Class="mb-4">Iniciar sesión</MudText>
+
+    <MudForm @ref="form" OnValidSubmit="IniciarSesion">
+
+        @* Comentario movido: Asegúrate de que el modelo.UsuLogin se está usando correctamente en el binding *@
+        <MudTextField @bind-Value="modelo.UsuLogin"
+                      Label="Nombre de usuario"
+                      Required="true"
+                      RequiredError="El nombre de usuario es obligatorio"
+                      Immediate="true" />
+
+        @* Comentario movido: Asegúrate de que el modelo.UsuPassword se está usando correctamente en el binding *@
+        <MudTextField @bind-Value="modelo.UsuPassword"
+                      Label="Contraseña"
+                      InputType="InputType.Password"
+                      Required="true"
+                      RequiredError="La contraseña es obligatoria"
+                      Immediate="true" />
+
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Class="mt-4" FullWidth="true" Disabled="@isLoading"
+                   @onclick="HandleLoginAttempt">
+            @if (isLoading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Inherit" Class="mr-2" />
+                <span>Procesando...</span>
+            }
+            else
+            {
+                <span>Iniciar sesión</span>
+            }
+        </MudButton>
+
+        <MudButton Variant="Variant.Text" FullWidth="true" Href="/registrarse" Class="mt-2">
+            ¿No tienes cuenta? Regístrate aquí
+        </MudButton>
+
+    </MudForm>
+</MudPaper>
+
+@code {
+    private LoginDTO modelo = new();
+    private bool isLoading = false;
+    private MudForm? form;
+
+    private async Task HandleLoginAttempt()
+    {
+        await form!.Validate();
+
+        if (form.IsValid)
+        {
+            await IniciarSesion();
+        }
+        else
+        {
+            Console.WriteLine("El formulario no es válido. Por favor, rellena todos los campos requeridos.");
+            await Swal.FireAsync("Error", "Por favor, rellena todos los campos requeridos.", "error");
+        }
+    }
+
+    private async Task IniciarSesion()
+    {
+        isLoading = true;
+        try
+        {
+            var response = await loginServicio.ValidarUsuario(modelo); // O llama a .Autorizacion(modelo) si es el que usas
+
+            if (response != null && response.EsCorrecto && response.Resultado != null)
+            {
+                // ¡AQUÍ ES LA CLAVE!
+                // El LoginServicio.ValidarUsuario (o .Autorizacion) YA DEBE HABER
+                // 1. Guardado el token en Local Storage
+                // 2. Llamado a AutenticacionExtension.ActualizarEstadoAutenticacion(claimsPrincipal)
+                // Por lo tanto, no necesitas llamar a 'auth.ActualizarEstadoAutenticacion' aquí.
+
+                await Swal.FireAsync("¡Bienvenido!", $"Hola, {response.Resultado.UsuLogin}!", "success"); // Usa UsuLogin de SesionDTO
+
+                var rol = response.Resultado.UsuRol?.ToLower();
+
+                if (rol == "administrador")
+                    Navigation.NavigateTo("/productos", true); // Forzar recarga completa para Blazor
+                else if (rol == "cliente")
+                    Navigation.NavigateTo("/catalogo", true);
+                else
+                    Navigation.NavigateTo("/", true);
+            }
+            else
+            {
+                await Swal.FireAsync("Error", response?.Mensaje ?? "Credenciales inválidas.", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Swal.FireAsync(new SweetAlertOptions
+                {
+                    Title = "Error inesperado",
+                    Text = $"No se pudo iniciar sesión: {ex.Message}",
+                    Icon = SweetAlertIcon.Error,
+                    ConfirmButtonText = "Aceptar"
+                });
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}
+
+
+@* @code {
+    private LoginDTO modeloLogin = new();
+
+    private async Task IniciarSesion()
+    {
+        var respuesta = await loginServicio.ValidarUsuario(modeloLogin);
+
+        if (respuesta.EsCorrecto)
+        {
+            var sesion = respuesta.Resultado;
+
+            await ((AutenticacionExtension)AuthProvider).ActualizarEstadoAutenticacion(sesion);
+
+            await Swal.FireAsync("Bienvenido", $"Hola {sesion.UsuNombre}", SweetAlertIcon.Success);
+            Navigation.NavigateTo("/");
+        }
+
+        else
+        {
+            await Swal.FireAsync("Error", respuesta.Mensaje ?? "No se pudo iniciar sesión", SweetAlertIcon.Error);
+        }
+    }
+
+} *@

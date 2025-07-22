@@ -1,0 +1,68 @@
+﻿@using MudBlazor
+@using Ecommerce.DTO
+@using Ecommerce.Client.Servicios.Contrato
+@using Microsoft.AspNetCore.Components
+@inject IProductoClienteServicio productoServicio
+@inject IJSRuntime JS
+@inject SweetAlertService Swal
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6">Nuevo Producto</MudText>
+
+        <MudTextField @bind-Value="producto.PrTitulo" Label="Título" Required="true" />
+        <MudTextField @bind-Value="producto.PrDescripcion" Label="Descripción" Required="true" />
+        
+        @* AHORA T="decimal?" es compatible con ProductoDTO.PrValorVenta que es decimal? *@
+        <MudNumericField T="decimal?" @bind-Value="producto.PrValorVenta" Label="Precio" Required="true" />
+        @* AHORA T="decimal?" es compatible con ProductoDTO.PrSaldo que es decimal? *@
+        <MudNumericField T="decimal?" @bind-Value="producto.PrSaldo" Label="Saldo" Required="true" />
+
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Guardar">Guardar</MudButton>
+        <MudButton Color="Color.Secondary" OnClick="Cancelar">Cancelar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private ProductoDTO producto = new();
+
+    [CascadingParameter]
+    public MudDialogInstance MudDialog { get; set; }
+
+    private async Task Guardar()
+    {
+        try
+        {
+            producto.PrNegoId ??= 1;
+            producto.PrUsuId ??= 1;
+            producto.PrPorcIva ??= 19m; // Asegúrate de usar 'm' para decimal literal
+            producto.PrEstado ??= "A";
+            producto.PrFecha ??= DateTime.Now;
+
+            var respuesta = await productoServicio.Crear(producto);
+
+            if (respuesta.EsCorrecto)
+            {
+                await Swal.FireAsync("Éxito", respuesta.Mensaje ?? "Producto creado correctamente", "success");
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                await Swal.FireAsync("Error", respuesta.Mensaje ?? "Error al crear producto", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            await Swal.FireAsync("Error inesperado", $"Ocurrió un error al guardar: {ex.Message}", "error");
+            Console.Error.WriteLine($"Error en Dialog/Producto.razor Guardar: {ex.Message}");
+        }
+    }
+
+    private void Cancelar()
+    {
+        MudDialog.Cancel();
+    }
+}

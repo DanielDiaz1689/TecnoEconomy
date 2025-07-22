@@ -1,0 +1,121 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ecommerce.Client</title>
+    <base href="/" />
+
+    <link rel="icon" href="favicon.png" type="image/png" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+
+        #loading-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            position: absolute;
+            width: 100%;
+            background-color: white;
+            z-index: 9999;
+        }
+
+        /* CAMBIO AQUÍ: Contenedor para la animación de puntos */
+        .loading-progress {
+            width: 90px; /* Ancho para contener los 3 puntos */
+            height: 20px; /* Altura de los puntos */
+            display: flex;
+            justify-content: space-between; /* Espacia los puntos */
+            align-items: center;
+        }
+
+            /* CAMBIO AQUÍ: Estilo base para cada punto */
+            .loading-progress .dot {
+                width: 15px; /* Tamaño de cada punto */
+                height: 15px;
+                background-color: #1976d2; /* Color de los puntos */
+                border-radius: 50%; /* Para hacerlos perfectamente circulares */
+                opacity: 0; /* Inician invisibles */
+                animation: dot-fade 1.5s infinite ease-in-out; /* Animación principal */
+            }
+
+                /* CAMBIO AQUÍ: Retraso de animación para cada punto para que aparezcan uno a uno */
+                .loading-progress .dot:nth-child(1) {
+                    animation-delay: 0s;
+                }
+
+                .loading-progress .dot:nth-child(2) {
+                    animation-delay: 0.5s; /* Segundo punto aparece 0.5s después del primero */
+                }
+
+                .loading-progress .dot:nth-child(3) {
+                    animation-delay: 1s; /* Tercer punto aparece 1s después del primero */
+                }
+
+        .loading-progress-text {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            color: #1976d2;
+        }
+
+        /* CAMBIO AQUÍ: Keyframes para la animación de los puntos */
+        @keyframes dot-fade {
+            0%, 100% {
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1; /* Se vuelven visibles a la mitad de la animación */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <!-- CAMBIO AQUÍ: Reemplazo del SVG del círculo por divs para los puntos -->
+        <div class="loading-progress">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+        <div class="loading-progress-text">Cargando...</div>
+    </div>
+
+    <div id="app">Cargando...</div>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="_content/CurrieTechnologies.Razor.SweetAlert2/sweetalert2.min.js"></script>
+
+    <!-- ELIMINAR O COMENTAR ESTA LÍNEA PARA DESHABILITAR BROWSERLINK COMPLETAMENTE -->
+    <!-- <script src="_framework/aspnetcore-browser-refresh.js"></script> -->
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const app = document.getElementById("app");
+            const loading = document.getElementById("loading-screen");
+
+            if (!app || !loading) return;
+
+            const observer = new MutationObserver(() => {
+                if (app.innerHTML.trim() !== "") {
+                    loading.style.opacity = "0";
+                    setTimeout(() => loading.style.display = "none", 300);
+                    observer.disconnect();
+                }
+            });
+
+            observer.observe(app, { childList: true, subtree: true });
+        });
+    </script>
+</body>
+</html>

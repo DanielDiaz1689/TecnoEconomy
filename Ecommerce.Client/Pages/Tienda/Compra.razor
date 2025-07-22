@@ -1,0 +1,366 @@
+﻿@page "/compra"
+
+@using Ecommerce.DTO
+@using Ecommerce.Client.Servicios.Contrato
+@inject ICompraServicio CompraServicio
+@inject IProductoClienteServicio ProductoServicio
+@inject IUsuarioServicio UsuarioServicio
+@inject IJSRuntime JS // Para SweetAlert2
+@inject ISnackbar Snackbar // Para MudBlazor Snackbar si lo deseas
+
+<style>
+    .section-box {
+        margin-bottom: 24px;
+        padding: 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        background-color: white;
+    }
+    .section-subbox {
+        padding: 12px;
+        border-radius: 6px;
+        background-color: #f8f8f8;
+        border: 1px solid #eee;
+    }
+</style>
+
+<MudPaper Class="p-6" Style="background-color: #f5f5f5; border-radius: 12px;">
+    <MudText Typo="Typo.h4" Class="mb-4" Align="Align.Center">MÓDULO DE COMPRAS</MudText>
+
+    <MudPaper Class="section-box">
+        <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Primary">INFORMACIÓN DEL PROVEEDOR</MudText>
+        <MudGrid Class="gap-4">
+            <MudItem xs="12" sm="4">
+                <MudTextField @bind-Value="cedulaProveedor" Label="C.C / NIT" Immediate="true" Dense="true"
+                              Placeholder="Ej. 123456789" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudTextField Value="@proveedorSeleccionado?.UsuNombre" Label="Nombre" Disabled="true" Dense="true"
+                              Placeholder="Nombre del proveedor" />
+            </MudItem>
+            <MudItem xs="12" sm="4" Class="d-flex align-end">
+                <MudButton OnClick="BuscarProveedorPorCedula" StartIcon="@Icons.Material.Filled.Search"
+                           Color="Color.Primary" FullWidth="true">
+                    Buscar Proveedor
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudPaper Class="section-box">
+        <MudText Typo="Typo.h6" Class="mb-3" Color="Color.Primary">DETALLE DE LA COMPRA</MudText>
+        <MudPaper Class="section-subbox">
+            <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Primary">Agregar Productos</MudText>
+            <MudGrid Class="gap-4">
+                <MudItem xs="12" sm="6">
+                    <MudAutocomplete T="ProductoDTO"
+                                     @bind-Value="productoSeleccionado"
+                                     SearchFunc="BuscarProductos"
+                                     ToStringFunc="p => p?.PrTitulo"
+                                     Label="Buscar Producto"
+                                     Placeholder="Escribe para buscar un producto"
+                                     Clearable="true"
+                                     Dense="true" />
+                </MudItem>
+                <MudItem xs="12" sm="2">
+                    <MudNumericField @bind-Value="cantidadProductoAAgregar" Label="Cantidad" Variant="Variant.Outlined" Min="1" />
+                </MudItem>
+                <MudItem xs="12" sm="2">
+                     <MudNumericField @bind-Value="ivaProductoAAgregar" Label="IVA (%)" Variant="Variant.Outlined" Min="0" Max="100" />
+                </MudItem>
+                <MudItem xs="12" sm="2" Class="d-flex align-end">
+                    <MudButton StartIcon="@Icons.Material.Filled.Add"
+                               Disabled="@(!ProductoValido())"
+                               OnClick="AgregarProducto"
+                               Color="Color.Primary"
+                               FullWidth="true">
+                        Agregar
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudPaper>
+
+    <MudPaper Class="section-box">
+        <MudTable T="CompraDetalleDTO" Items="compra.TblCompraDetalle" Dense="true" Hover="true">
+            <HeaderContent>
+                <MudTh>Imagen</MudTh>
+                <MudTh>Producto</MudTh>
+                <MudTh>Cant.</MudTh>
+                <MudTh>IVA%</MudTh>
+                <MudTh>Valor Und.</MudTh>
+                <MudTh>Subtotal</MudTh>
+                <MudTh>IVA</MudTh>
+                <MudTh>Total</MudTh>
+                <MudTh>Acciones</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                
+                <MudTd DataLabel="Imagen">
+                    @if (!string.IsNullOrEmpty(context.Producto?.PrImagen))
+                    {
+                        <MudAvatar Image="@context.Producto.PrImagen" Size="Size.Small" />
+                    }
+                    else
+                    {
+                        <MudAvatar Icon="@Icons.Material.Filled.ImageNotSupported" Size="Size.Small" />
+                    }
+                </MudTd>
+
+                
+                <MudTd DataLabel="Producto">
+                    @context.Producto?.PrTitulo
+                </MudTd>
+
+                
+                <MudTd DataLabel="Cant.">
+                    <MudNumericField T="decimal?"
+                                     Value="context.CompdetCantidad"
+                                     ValueChanged="val => OnCantidadChanged(val, context)"
+                                     Min="1" Immediate="true" Dense="true" />
+                </MudTd>
+
+                
+                <MudTd DataLabel="IVA%">
+                    <MudNumericField T="decimal?"
+                                     Value="context.CompdetPorcIva"
+                                     ValueChanged="val => OnIvaChanged(val, context)"
+                                     Min="0" Max="100" Immediate="true" Dense="true" />
+                </MudTd>
+
+                
+                <MudTd DataLabel="Valor Und.">
+                    <MudNumericField T="decimal?"
+                                     Value="context.CompdetValorUnd"
+                                     ValueChanged="val => OnValorUndChanged(val, context)"
+                                     Min="0" Immediate="true" Dense="true" />
+                </MudTd>
+
+                
+                <MudTd DataLabel="Subtotal">
+                    @context.CompdetSubtotal.GetValueOrDefault().ToString("C")
+                </MudTd>
+
+                
+                <MudTd DataLabel="IVA">
+                    @context.CompdetValorIva.GetValueOrDefault().ToString("C")
+                </MudTd>
+
+                
+                <MudTd DataLabel="Total">
+                    @context.CompdetTotal.GetValueOrDefault().ToString("C")
+                </MudTd>
+
+                
+                <MudTd DataLabel="Acciones">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => QuitarProducto(context))" Color="Color.Error" />
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Align="Align.Center">No hay productos agregados a la compra.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+
+    <MudPaper Class="section-box">
+        <MudGrid>
+            <MudItem xs="12" sm="4">
+                <MudText>Subtotal: <b>@compra.TblCompraDetalle.Sum(x => x.CompdetSubtotal ?? 0).ToString("C")</b></MudText>
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudText>IVA: <b>@compra.TblCompraDetalle.Sum(x => x.CompdetValorIva ?? 0).ToString("C")</b></MudText>
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudText Typo="Typo.h6">TOTAL: <b>@compra.TblCompraDetalle.Sum(x => x.CompdetTotal ?? 0).ToString("C")</b></MudText>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <MudGrid Class="mt-4">
+        <MudItem xs="12" Class="d-flex justify-end gap-2">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="RegistrarCompra" StartIcon="@Icons.Material.Filled.Save">Guardar movimiento</MudButton>
+            <MudButton Color="Color.Default" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" OnClick="ReiniciarCompra">+ nuevo</MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    private CompraDTO compra = new() { TblCompraDetalle = new List<CompraDetalleDTO>() };
+    private ProductoDTO? productoSeleccionado;
+    private UsuarioDTO? proveedorSeleccionado;
+    private string cedulaProveedor = string.Empty;
+    private decimal? cantidadProductoAAgregar = 1; // Para la cantidad en el campo de agregar producto
+    private decimal? ivaProductoAAgregar = 0; // Para el IVA en el campo de agregar producto
+
+    // Constructor implícito del componente (no es necesario declararlo, Blazor lo hace)
+
+    // OnInitializedAsync es el primer ciclo de vida del componente.
+    // Es el lugar ideal para inicializar datos asíncronos o estado inicial.
+    protected override void OnInitialized()
+    {
+        
+    }
+
+    private async Task BuscarProveedorPorCedula()
+    {
+        if (string.IsNullOrWhiteSpace(cedulaProveedor))
+        {
+            await ShowSweetAlert("warning", "Validación", "Por favor, ingrese la cédula/NIT del proveedor.");
+            return;
+        }
+
+        var response = await UsuarioServicio.ObtenerPorCedula(cedulaProveedor);
+        if (response != null && response.EsCorrecto && response.Resultado != null)
+        {
+            proveedorSeleccionado = response.Resultado;
+            compra.CompraTerId = proveedorSeleccionado.UsuId;
+            Snackbar.Add($"Proveedor '{proveedorSeleccionado.UsuNombre}' encontrado.", Severity.Success);
+        }
+        else
+        {
+            proveedorSeleccionado = null;
+            compra.CompraTerId = null; // Limpiar si no se encuentra
+            await ShowSweetAlert("error", "Proveedor no encontrado", response?.Mensaje ?? "No se encontró un proveedor con la cédula/NIT ingresada.");
+        }
+    }
+
+    private async Task<IEnumerable<ProductoDTO>> BuscarProductos(string texto)
+    {
+        var response = await ProductoServicio.Lista(texto);
+        return response?.Resultado ?? new List<ProductoDTO>();
+    }
+
+    private bool ProductoValido() => productoSeleccionado != null && cantidadProductoAAgregar > 0;
+
+    private void AgregarProducto()
+    {
+        if (productoSeleccionado == null || cantidadProductoAAgregar == null || cantidadProductoAAgregar <= 0)
+        {
+            // Ya debería estar deshabilitado por ProductoValido(), pero es buena práctica defensiva.
+            return;
+        }
+
+        if (compra.TblCompraDetalle.Any(x => x.ComdetPrId == productoSeleccionado.PrId))
+        {
+            Snackbar.Add($"El producto '{productoSeleccionado.PrTitulo}' ya ha sido agregado.", Severity.Warning);
+            return;
+        }
+
+        var detalle = new CompraDetalleDTO
+        {
+            ComdetPrId = productoSeleccionado.PrId,
+            Producto = productoSeleccionado, // Aseguramos que Producto se copia aquí
+            CompdetCantidad = cantidadProductoAAgregar,
+            CompdetPorcIva = ivaProductoAAgregar ?? 0,
+            CompdetValorUnd = productoSeleccionado.PrValorCompra ?? 0 // Usar el valor de compra del producto
+        };
+
+        RecalcularTotales(detalle);
+        compra.TblCompraDetalle.Add(detalle);
+        productoSeleccionado = null; // Limpiar para que el usuario pueda agregar otro
+        cantidadProductoAAgregar = 1; // Resetear cantidad
+        ivaProductoAAgregar = 0; // Resetear IVA
+        Snackbar.Add($"'{detalle.Producto.PrTitulo}' agregado.", Severity.Info);
+    }
+
+    private void QuitarProducto(CompraDetalleDTO detalle)
+    {
+        compra.TblCompraDetalle.Remove(detalle);
+        Snackbar.Add($"'{detalle.Producto?.PrTitulo}' removido.", Severity.Normal);
+    }
+
+    // Se unifican los recalculos ya que todos afectan el mismo detalle
+    private void OnCantidadChanged(decimal? cantidad, CompraDetalleDTO detalle)
+    {
+        detalle.CompdetCantidad = cantidad;
+        RecalcularTotales(detalle);
+    }
+
+    private void OnIvaChanged(decimal? iva, CompraDetalleDTO detalle)
+    {
+        detalle.CompdetPorcIva = iva;
+        RecalcularTotales(detalle);
+    }
+
+    private void OnValorUndChanged(decimal? valorUnd, CompraDetalleDTO detalle)
+    {
+        detalle.CompdetValorUnd = valorUnd;
+        RecalcularTotales(detalle);
+    }
+
+    private void RecalcularTotales(CompraDetalleDTO detalle)
+    {
+        var cantidad = detalle.CompdetCantidad ?? 0;
+        var valorUnd = detalle.CompdetValorUnd ?? 0;
+        var porcIva = detalle.CompdetPorcIva ?? 0;
+
+        detalle.CompdetSubtotal = cantidad * valorUnd;
+        detalle.CompdetValorIva = detalle.CompdetSubtotal * (porcIva / 100);
+        detalle.CompdetTotal = detalle.CompdetSubtotal + detalle.CompdetValorIva;
+    }
+
+    private async Task RegistrarCompra()
+    {
+        if (proveedorSeleccionado == null)
+        {
+            await ShowSweetAlert("warning", "Validación", "Debe seleccionar un proveedor para registrar la compra.");
+            return;
+        }
+        if (!compra.TblCompraDetalle.Any())
+        {
+            await ShowSweetAlert("warning", "Validación", "La compra debe contener al menos un producto.");
+            return;
+        }
+
+        compra.CompraTerId = proveedorSeleccionado.UsuId; // Reconfirmar ID del proveedor
+        // Los totales de la compra se calculan en el backend también, pero los puedes enviar desde aquí
+        // para asegurarte de que el DTO esté completo.
+        compra.CompraSubtotal = compra.TblCompraDetalle.Sum(x => x.CompdetSubtotal ?? 0);
+        compra.CompraValorIva = compra.TblCompraDetalle.Sum(x => x.CompdetValorIva ?? 0);
+        compra.CompraTotal = compra.TblCompraDetalle.Sum(x => x.CompdetTotal ?? 0);
+
+        // Importante: Elimina las referencias cíclicas para evitar problemas de serialización JSON.
+        // Si TblCompraDetalle contiene objetos ProductoDTO completos y ProductoDTO
+        // a su vez tiene referencias a CompraDetalleDTO (o viceversa), esto causará un bucle.
+        // Tu backend ya maneja esto, pero es una buena medida defensiva en el cliente también.
+        foreach (var detalle in compra.TblCompraDetalle)
+        {
+            detalle.Producto = null; // Quitar la referencia al objeto completo para el envío
+        }
+
+        var response = await CompraServicio.Registrar(compra);
+
+        if (response != null && response.EsCorrecto)
+        {
+            await ShowSweetAlert("success", "¡Compra registrada!", "La compra se registró correctamente.");
+            ReiniciarCompra();
+        }
+        else
+        {
+            await ShowSweetAlert("error", "Error al registrar", response?.Mensaje ?? "Ocurrió un error inesperado al registrar la compra.");
+        }
+    }
+
+    private void ReiniciarCompra()
+    {
+        compra = new() { TblCompraDetalle = new List<CompraDetalleDTO>() };
+        proveedorSeleccionado = null;
+        productoSeleccionado = null;
+        cedulaProveedor = string.Empty;
+        cantidadProductoAAgregar = 1;
+        ivaProductoAAgregar = 0;
+        Snackbar.Add("Formulario de compra reiniciado.", Severity.Normal);
+    }
+
+    // Método auxiliar para mostrar SweetAlert
+    private async Task ShowSweetAlert(string icon, string title, string text)
+    {
+        await JS.InvokeVoidAsync("Swal.fire", new
+        {
+            icon = icon,
+            title = title,
+            text = text,
+            confirmButtonColor = "#3085d6" // Color por defecto
+        });
+    }
+}

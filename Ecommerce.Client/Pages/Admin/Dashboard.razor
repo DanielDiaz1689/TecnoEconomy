@@ -1,0 +1,74 @@
+﻿@page "/dashboard"
+@using Ecommerce.DTO
+@using Ecommerce.Client.Servicios.Contrato
+@inject IDashboardServicio dashboardServicio
+
+
+<MudPaper Class="p-4">
+
+    <MudGrid Gutter="GutterSize.Gutter4">
+        <MudItem xs="12" sm="6">
+            <MudCard Class="border-left border-primary shadow p-4">
+                <MudStack Row="true" AlignItems="AlignItems.Center" JustifyContent="Justify.SpaceBetween">
+                    <div>
+                        <MudText Typo="Typo.subtitle2" Color="Color.Primary">Total Ingresos</MudText>
+                        <MudText Typo="Typo.h6">S/. @dashboard.TotalIngresos</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Size="Size.Large" Color="Color.Secondary" />
+                </MudStack>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudCard Class="border-left border-success shadow p-4">
+                <MudStack Row="true" AlignItems="AlignItems.Center" JustifyContent="Justify.SpaceBetween">
+                    <div>
+                        <MudText Typo="Typo.subtitle2" Color="Color.Success">Total Ventas</MudText>
+                        <MudText Typo="Typo.h6">@dashboard.TotalVentas</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Large" Color="Color.Secondary" />
+                </MudStack>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudCard Class="border-left border-warning shadow p-4">
+                <MudStack Row="true" AlignItems="AlignItems.Center" JustifyContent="Justify.SpaceBetween">
+                    <div>
+                        <MudText Typo="Typo.subtitle2" Color="Color.Warning">Total Clientes</MudText>
+                        <MudText Typo="Typo.h6">@dashboard.TotalCliente</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Large" Color="Color.Secondary" />
+                </MudStack>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6">
+            <MudCard Class="border-left border-info shadow p-4">
+                <MudStack Row="true" AlignItems="AlignItems.Center" JustifyContent="Justify.SpaceBetween">
+                    <div>
+                        <MudText Typo="Typo.subtitle2" Color="Color.Info">Total Productos</MudText>
+                        <MudText Typo="Typo.h6">@dashboard.TotalProductos</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Large" Color="Color.Secondary" />
+                </MudStack>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+</MudPaper>
+
+@code {
+    private DashboardDTO dashboard = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await dashboardServicio.Resumen();
+
+        if (response.EsCorrecto && response.Resultado is DashboardDTO dto)
+        {
+            dashboard = dto;
+        }
+    }
+}
+

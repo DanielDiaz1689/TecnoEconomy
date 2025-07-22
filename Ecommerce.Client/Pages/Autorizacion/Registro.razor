@@ -1,0 +1,109 @@
+﻿    @page "/registrarse"
+    @using Ecommerce.DTO
+    @using Ecommerce.Client.Servicios.Contrato
+    @inject IUsuarioServicio usuarioServicio
+    @inject SweetAlertService Swal
+    @inject NavigationManager nav
+
+    <MudPaper Class="mx-auto mt-12 p-6" Style="max-width: 400px;" Elevation="6">
+        <MudText Typo="Typo.h5" Class="mb-4">Registro de Cliente</MudText>
+
+        <MudForm @ref="_form" Model="@modelo" EnableValidation="true"
+                 OnValidSubmit="RegistrarCliente"
+                 OnInvalidSubmit="OnFormInvalid">
+            <MudValidationSummary />
+
+            <MudTextField @bind-Value="modelo.UsuNombre" Label="Nombre Completo" Required="true" RequiredError="El nombre es requerido." For="@(() => modelo.UsuNombre)" />
+            <MudTextField @bind-Value="modelo.UsuCorreo" Label="Correo Electrónico" Required="true" RequiredError="El correo es requerido." For="@(() => modelo.UsuCorreo)" InputType="InputType.Email" />
+            <MudTextField @bind-Value="modelo.UsuTelefono" Label="Teléfono" Required="true" RequiredError="El teléfono es requerido." For="@(() => modelo.UsuTelefono)" InputType="InputType.Telephone" />
+            <MudTextField @bind-Value="modelo.UsuNumeroDocumento" Label="Número de Documento" Required="true" RequiredError="El documento es requerido." For="@(() => modelo.UsuNumeroDocumento)" />
+            <MudTextField @bind-Value="modelo.UsuLogin" Label="Nombre de Usuario" Required="true" RequiredError="El nombre de usuario es requerido." For="@(() => modelo.UsuLogin)" />
+            <MudTextField @bind-Value="modelo.UsuPassword" Label="Contraseña" InputType="InputType.Password" Required="true" RequiredError="La contraseña es requerida." For="@(() => modelo.UsuPassword)" />
+            <MudTextField @bind-Value="modelo.UsuConfirmPassword" Label="Confirmar Contraseña" InputType="InputType.Password" Required="true" RequiredError="La confirmación de contraseña es requerida." For="@(() => modelo.UsuConfirmPassword)" />
+
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" FullWidth="true" Class="mt-4"
+                       OnClick="HandleSubmitClick">
+                Registrarse
+            </MudButton>
+
+            <MudButton Variant="Variant.Text" FullWidth="true" Href="/login" Class="mt-2">
+                ¿Ya tienes cuenta? Inicia sesión
+            </MudButton>
+        </MudForm>
+    </MudPaper>
+
+    @code {
+        private MudForm _form;
+
+        private UsuarioDTO modelo = new()
+            {
+                UsuNombre = "",
+                UsuCorreo = "",
+                UsuTelefono = "",
+                UsuNumeroDocumento = "",
+                UsuLogin = "",
+                UsuPassword = "",
+                UsuConfirmPassword = "",
+                
+                UsuRol = "cliente", // <-- ¡CORREGIDO!
+                UsuEstado = "Activo"
+            };
+
+        private async Task HandleSubmitClick()
+        {
+            Console.WriteLine("HandleSubmitClick: Botón 'Registrarse' clickeado.");
+            await _form.Validate();
+            Console.WriteLine($"HandleSubmitClick: Formulario validado. Es válido: {_form.IsValid}");
+
+            if (_form.IsValid)
+            {
+                await RegistrarCliente();
+            }
+            else
+            {
+                OnFormInvalid();
+            }
+        }
+
+        private void OnFormInvalid()
+        {
+            Console.WriteLine("OnFormInvalid: El formulario es inválido. Por favor, revisa los campos.");
+        }
+
+        private async Task RegistrarCliente()
+        {
+            Console.WriteLine("RegistrarCliente: El formulario es válido y se está procesando.");
+
+            if (modelo.UsuPassword != modelo.UsuConfirmPassword)
+            {
+                await Swal.FireAsync("Advertencia", "Las contraseñas no coinciden", SweetAlertIcon.Warning);
+                return;
+            }
+
+            modelo.UsuRol = "cliente"; // También aquí, por si acaso (aunque la inicialización es la principal)
+            modelo.UsuEstado = "Activo";
+
+            try
+            {
+                var respuesta = await usuarioServicio.Crear(modelo);
+
+                if (respuesta.EsCorrecto)
+                {
+                    await Swal.FireAsync("Éxito", "Registro exitoso. Ahora puedes iniciar sesión.", SweetAlertIcon.Success);
+                    nav.NavigateTo("/login");
+                }
+                else
+                {
+                    // El mensaje de error del backend ahora debería ser más específico si hay otro problema
+                    await Swal.FireAsync("Error", respuesta.Mensaje ?? "No se pudo registrar el usuario por un error desconocido.", SweetAlertIcon.Error);
+                    Console.WriteLine($"RegistrarCliente: Error del servicio: {respuesta.Mensaje}");
+                }
+            }
+            catch (Exception ex)
+            {
+                await Swal.FireAsync("Error inesperado", ex.Message, SweetAlertIcon.Error);
+                Console.Error.WriteLine($"RegistrarCliente: Excepción inesperada: {ex.Message}");
+            }
+        }
+    }
+    

@@ -1,0 +1,186 @@
+﻿@page "/usuarios"
+
+@using Ecommerce.DTO
+@using Ecommerce.Client.Servicios.Contrato
+@inject IUsuarioServicio usuarioServicio
+@inject SweetAlertService Swal
+@inject NavigationManager navigationManager
+
+
+<MudPaper Class="p-4">
+    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.SpaceBetween">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="/usuario">
+            Nuevo usuario
+        </MudButton>
+        <MudTextField @bind-Value="buscar"
+                      Placeholder="Buscar usuario..."
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Class="w-50"
+                      Immediate="true"
+                      OnKeyDown="HandleKeyPress">
+        </MudTextField>
+    </MudStack>
+</MudPaper>
+
+@if (lista is not null)
+{
+    @*<MudText Typo="Typo.subtitle2">Cantidad de usuarios cargados: @lista?.Count()</MudText>*@
+
+    <MudGrid Class="mt-4" Gutter="GutterSize.Gutter4">
+        @foreach (var item in lista)
+        {
+            <MudItem xs="12" sm="6" md="4" xl="3">
+                <MudCard Class="h-100">
+                    <MudCardContent>
+                        @{
+                            string defaultAvatarUrl = "/ImagenesCliente/userdefault.png";
+                        }
+
+                        <MudAvatar Image="@defaultAvatarUrl" Size="Size.Large" Class="mb-2" />
+
+                        <MudText Typo="Typo.subtitle1"><b>Nombre:</b> @item.UsuNombre</MudText>
+                        <MudText Typo="Typo.subtitle2"><b>Correo:</b> @item.UsuCorreo</MudText>
+                        <MudText Typo="Typo.subtitle2"><b>Cédula:</b> @item.UsuNumeroDocumento</MudText>
+                    </MudCardContent>
+                    <MudCardActions>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small" Href="@($"/usuario/{item.UsuId}")">
+                            <MudIcon Icon="@Icons.Material.Filled.Edit" />
+                        </MudButton>
+
+                        @* Botón de ELIMINAR - Reemplaza los botones de Activar/Desactivar *@
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error" Size="Size.Small" OnClick="async () => await EliminarUsuario(item)">
+                            <MudIcon Icon="@Icons.Material.Filled.Delete" />
+                        </MudButton>
+
+                    </MudCardActions>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+else
+{
+    <div class="text-center mt-4">
+        <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+    </div>
+}
+
+@code {
+    private List<UsuarioDTO>? lista = null;
+    private string buscar = "";
+    // private UsuarioDTO modeloUsuario = new(); // Si no lo usas, puedes comentarlo o eliminarlo
+
+    private async Task HandleKeyPress(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await ObtenerUsuarios(buscar);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ObtenerUsuarios();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Swal.FireAsync("¡Bienvenido!", "Ya puedes gestionar los usuarios.", SweetAlertIcon.Info);
+        }
+    }
+
+    private async Task ObtenerUsuarios(string Valor = "")
+    {
+        // Asumiendo que usuarioServicio.Lista llama a la ruta "Usuario/ListaCompleta" en tu API
+        // y que no necesitas un rol específico para el filtro inicial (por eso el primer parámetro es "")
+        var response = await usuarioServicio.Lista("", Valor);
+
+        if (response.EsCorrecto && response.Resultado is not null)
+        {
+            lista = (List<UsuarioDTO>)response.Resultado!;
+        }
+        else
+        {
+            lista = new List<UsuarioDTO>(); // Asegura que la lista nunca sea null si no hay datos
+
+            var mensaje = !string.IsNullOrWhiteSpace(response.Mensaje)
+                ? response.Mensaje
+                : "No se pudo cargar la lista de usuarios.";
+
+            await Swal.FireAsync("Error", mensaje, SweetAlertIcon.Error);
+        }
+    }
+
+    // Nuevo método para eliminar usuario
+    private async Task EliminarUsuario(UsuarioDTO modelo)
+    {
+        var result = await Swal.FireAsync(new SweetAlertOptions
+            {
+                Title = "¿Estás seguro?",
+                Text = $"¿Deseas ELIMINAR al usuario {modelo.UsuNombre}?", // Mensaje claro de eliminación
+                Icon = SweetAlertIcon.Warning,
+                ShowCancelButton = true,
+                ConfirmButtonText = "Sí, eliminar",
+                CancelButtonText = "No, cancelar"
+            });
+
+        if (result.IsConfirmed)
+        {
+            try
+            {
+                // Llama al método Eliminar del servicio del cliente
+                var response = await usuarioServicio.Eliminar(modelo.UsuId);
+
+                // ===> AQUÍ ESTÁ LA CORRECCIÓN CLAVE <===
+                // El mensaje de éxito y la recarga de la lista solo deben ocurrir si la operación fue realmente correcta.
+                if (response.EsCorrecto && response.Resultado) // response.Resultado es bool para eliminación
+                {
+                    await ObtenerUsuarios(); // Recarga la lista para reflejar la eliminación
+                    await Swal.FireAsync("Eliminado", $"Usuario {modelo.UsuNombre} ha sido ELIMINADO.", SweetAlertIcon.Success);
+                }
+                else
+                {
+                    // Si EsCorrecto es false o Resultado es false, muestra el error y NO HAGAS NADA MÁS.
+                    var errorMessage = response.Mensaje ?? "No se pudo eliminar el usuario.";
+                    await Swal.FireAsync("Error", errorMessage, SweetAlertIcon.Error);
+                    // No hay return aquí, pero el flujo del if/else ya impide el mensaje de éxito.
+                }
+            }
+            catch (Exception ex)
+            {
+                // Este catch es para errores de red o excepciones inesperadas del HttpClient
+                await Swal.FireAsync("Error crítico", $"Ocurrió un error: {ex.Message}", SweetAlertIcon.Error);
+            }
+        }
+    }
+
+
+    // Este método EditarUsuario() parece ser para una página de edición, no para la lista.
+    // Si no lo usas en esta página, puedes considerarlo para eliminarlo de aquí.
+    // private async Task EditarUsuario()
+    // {
+    //     try
+    //     {
+    //         var respuesta = await usuarioServicio.Editar(modelo.UsuId);
+
+
+    //         if (respuesta != null && respuesta.EsCorrecto)
+    //         {
+    //             await Swal.FireAsync("Éxito", "Usuario actualizado correctamente", SweetAlertIcon.Success);
+    //             navigationManager.NavigateTo("/usuarios");
+    //         }
+    //         else
+    //         {
+    //             await Swal.FireAsync("Error", respuesta?.Mensaje ?? "Ocurrió un error", SweetAlertIcon.Error);
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         await Swal.FireAsync("Error crítico", ex.Message, SweetAlertIcon.Error);
+    //     }
+    // }
+}
+

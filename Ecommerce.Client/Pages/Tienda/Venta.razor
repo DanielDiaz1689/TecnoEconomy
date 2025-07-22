@@ -1,0 +1,287 @@
+﻿@page "/venta"
+@using Ecommerce.DTO
+@using Ecommerce.Client.Servicios.Contrato
+@inject IVentaServicio VentaServicio
+@inject IProductoClienteServicio ProductoServicio
+@inject ICarritoServicio CarritoServicio
+@inject IUsuarioServicio UsuarioServicio
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+
+<MudPaper Class="p-6" Style="background-color: #f5f5f5; border-radius: 12px;">
+
+    <MudText Typo="Typo.h4" Class="mb-4" Align="Align.Center">MODULO DE VENTAS</MudText>
+
+    <!-- Información del Cliente -->
+    <MudPaper Class="section-box">
+        <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Primary">INFORMACIÓN DEL TERCERO</MudText>
+        <MudGrid Class="gap-4">
+            <MudItem xs="12" sm="4">
+                <MudTextField @bind-Value="cedulaCliente" Label="C.C / NIT" Immediate="true" Dense="true" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudTextField Value="@usuarioSeleccionado?.UsuNombre" Label="Nombre" Disabled="true" Dense="true" />
+            </MudItem>
+            <MudItem xs="12" sm="4" Class="d-flex align-end">
+                <MudButton OnClick="BuscarClientePorCedula" StartIcon="@Icons.Material.Filled.Search" Color="Color.Primary" FullWidth="true">
+                    Buscar Cliente
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <!-- Agregar Productos -->
+    <MudPaper Class="section-box">
+        <MudText Typo="Typo.h6" Class="mb-3" Color="Color.Primary">DETALLE DE LA VENTA</MudText>
+
+        <MudPaper Class="section-subbox">
+            <MudText Typo="Typo.h6" Class="mb-2" Color="Color.Primary">Agregar Productos</MudText>
+            <MudGrid Class="gap-4">
+                <MudItem xs="12" sm="6">
+                    <MudAutocomplete T="ProductoDTO"
+                                     @bind-Value="productoSeleccionado"
+                                     SearchFunc="BuscarProductos"
+                                     ToStringFunc="p => p?.PrTitulo"
+                                     Label="Buscar Producto"
+                                     Clearable="true"
+                                     Dense="true" />
+                </MudItem>
+                <MudItem xs="12" sm="2" Class="d-flex align-end">
+                    <MudButton StartIcon="@Icons.Material.Filled.Add"
+                               Disabled="@(!ProductoValido())"
+                               OnClick="AgregarProducto"
+                               Color="Color.Primary"
+                               FullWidth="true">
+                        Agregar
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    </MudPaper>
+
+    <!-- Tabla Detalle -->
+    <MudPaper Class="section-box">
+        <MudTable T="VentaDetalleDTO" Items="venta.TblVentaDetalle" Dense="true" Hover="true">
+            <HeaderContent>
+                <MudTh>Imagen</MudTh>
+                <MudTh>Producto</MudTh>
+                <MudTh>Cant.</MudTh>
+                <MudTh>IVA%</MudTh>
+                <MudTh>Subtotal</MudTh>
+                <MudTh>IVA</MudTh>
+                <MudTh>Total</MudTh>
+                <MudTh>Acciones</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    @if (!string.IsNullOrEmpty(context.Producto?.PrImagen))
+                    {
+                        <MudAvatar Image="@context.Producto.PrImagen" Size="Size.Large" />
+                    }
+                </MudTd>
+                <MudTd>@context.Producto?.PrTitulo</MudTd>
+                <MudTd>
+                    <MudNumericField T="decimal?" Value="@context.VendetCantidad"
+                                                        ValueChanged="@GetCantidadChangedCallback(context)"
+                                                        Min="1" Immediate="true" Dense="true" />
+                </MudTd>
+                <MudTd>
+                    <MudNumericField T="decimal?" Value="@context.VendetPorcIva"
+                                                        ValueChanged="@GetIvaChangedCallback(context)"
+                                                        Min="0" Max="100" Immediate="true" Dense="true" />
+                </MudTd>
+                <MudTd>@context.VendetSubtotal?.ToString("N2")</MudTd>
+                <MudTd>@context.VendetValorIva?.ToString("N2")</MudTd>
+                <MudTd>@context.VendetTotal?.ToString("N2")</MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => QuitarProducto(context))" Color="Color.Error" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+
+    <!-- Totales -->
+    <MudPaper Class="section-box">
+        <MudGrid>
+            <MudItem xs="12" sm="4">
+                <MudText>Subtotal: <b>@venta.TblVentaDetalle.Sum(x => x.VendetSubtotal)?.ToString("N2")</b></MudText>
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudText>IVA: <b>@venta.TblVentaDetalle.Sum(x => x.VendetValorIva)?.ToString("N2")</b></MudText>
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudText Typo="Typo.h6">TOTAL: <b>@venta.TblVentaDetalle.Sum(x => x.VendetTotal)?.ToString("N2")</b></MudText>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <!-- Botones -->
+    <MudGrid Class="mt-4">
+        <MudItem xs="12" Class="d-flex justify-end gap-2">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="RegistrarVenta" StartIcon="@Icons.Material.Filled.Save">Guardar movimiento</MudButton>
+            <MudButton Color="Color.Info" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Print">Imprimir último</MudButton>
+            <MudButton Color="Color.Default" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Refresh" OnClick="ReiniciarVenta">+ nuevo</MudButton>
+        </MudItem>
+    </MudGrid>
+
+</MudPaper>
+
+
+
+
+@code {
+    private VentaDTO venta = new() { TblVentaDetalle = new List<VentaDetalleDTO>() };
+    private ProductoDTO? productoSeleccionado;
+    private UsuarioDTO? usuarioSeleccionado;
+
+    private string cedulaCliente;
+    private async Task BuscarClientePorCedula()
+    {
+        if (string.IsNullOrWhiteSpace(cedulaCliente))
+            return;
+
+        var response = await UsuarioServicio.ObtenerPorCedula(cedulaCliente);
+        if (response != null && response.EsCorrecto && response.Resultado != null)
+        {
+            usuarioSeleccionado = response.Resultado;
+            venta.VentaUsuId = usuarioSeleccionado.UsuId;
+            Console.WriteLine("Cliente encontrado: " + usuarioSeleccionado.UsuNombre);
+        }
+        else
+        {
+            usuarioSeleccionado = null;
+            Console.WriteLine("❌ No se encontró un cliente con esa cédula.");
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        venta.TblVentaDetalle = new List<VentaDetalleDTO>();
+    }
+
+    private bool ProductoValido() => productoSeleccionado != null;
+
+    private async Task<IEnumerable<UsuarioDTO>> BuscarUsuarios(string texto)
+    {
+        var response = await UsuarioServicio.Lista("", string.IsNullOrWhiteSpace(texto) ? "NA" : texto);
+        return response?.Resultado ?? new List<UsuarioDTO>();
+    }
+
+    private async Task<IEnumerable<ProductoDTO>> BuscarProductos(string texto)
+    {
+        var response = await ProductoServicio.Lista(texto);
+        return response?.Resultado ?? new List<ProductoDTO>();
+    }
+
+    private void OnUsuarioSeleccionado(UsuarioDTO usuario)
+    {
+        usuarioSeleccionado = usuario;
+        venta.VentaUsuId = usuario.UsuId;
+    }
+
+    private void AgregarProducto()
+    {
+        if (productoSeleccionado == null)
+            return;
+
+        var detalle = new VentaDetalleDTO
+            {
+                VendetPrId = productoSeleccionado.PrId,
+                Producto = productoSeleccionado,
+                VendetCantidad = 1,
+                VendetPorcIva = productoSeleccionado.PrPorcIva,
+                VendetValorUnd = productoSeleccionado.PrValorVenta
+            };
+
+        RecalcularTotales(detalle);
+        venta.TblVentaDetalle.Add(detalle);
+        productoSeleccionado = null;
+    }
+
+    private void QuitarProducto(VentaDetalleDTO detalle)
+    {
+        venta.TblVentaDetalle.Remove(detalle);
+    }
+
+    private void OnCantidadChanged(decimal? cantidad, VentaDetalleDTO detalle)
+    {
+        detalle.VendetCantidad = cantidad;
+        RecalcularTotales(detalle);
+    }
+
+    private void OnIvaChanged(decimal? iva, VentaDetalleDTO detalle)
+    {
+        detalle.VendetPorcIva = iva;
+        RecalcularTotales(detalle);
+    }
+
+    private EventCallback<decimal?> GetCantidadChangedCallback(VentaDetalleDTO detalle) =>
+        EventCallback.Factory.Create<decimal?>(this, val => OnCantidadChanged(val, detalle));
+
+    private EventCallback<decimal?> GetIvaChangedCallback(VentaDetalleDTO detalle) =>
+        EventCallback.Factory.Create<decimal?>(this, val => OnIvaChanged(val, detalle));
+
+    private void RecalcularTotales(VentaDetalleDTO detalle)
+    {
+        var cantidad = detalle.VendetCantidad ?? 0;
+        var valorUnd = detalle.VendetValorUnd ?? 0;
+        var porcIva = detalle.VendetPorcIva ?? 0;
+
+        detalle.VendetSubtotal = cantidad * valorUnd;
+        detalle.VendetValorIva = Math.Round((detalle.VendetSubtotal ?? 0) * (porcIva / 100), 2);
+        detalle.VendetTotal = (detalle.VendetSubtotal ?? 0) + (detalle.VendetValorIva ?? 0);
+    }
+
+    private async Task RegistrarVenta()
+    {
+        if (usuarioSeleccionado == null)
+        {
+            Console.WriteLine("⚠️ Seleccione un cliente.");
+            return;
+        }
+
+        venta.VentaUsuId = usuarioSeleccionado.UsuId;
+
+        // 🚨 Limpieza del campo Producto para evitar error HTTP 400
+        foreach (var detalle in venta.TblVentaDetalle)
+        {
+            detalle.Producto = null;
+        }
+
+        var response = await VentaServicio.Registrar(venta);
+        if (response.EsCorrecto)
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                icon = "success",
+                title = "¡Venta registrada!",
+                text = "La venta se registró correctamente.",
+                confirmButtonColor = "#3085d6"
+            });
+
+            usuarioSeleccionado = null;
+            venta = new() { TblVentaDetalle = new List<VentaDetalleDTO>() };
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("Swal.fire", new
+            {
+                icon = "error",
+                title = "Error al registrar",
+                text = response.Mensaje,
+                confirmButtonColor = "#d33"
+            });
+        }
+
+    }
+
+
+    private void ReiniciarVenta()
+    {
+        venta = new() { TblVentaDetalle = new List<VentaDetalleDTO>() };
+        usuarioSeleccionado = null;
+        productoSeleccionado = null;
+        cedulaCliente = string.Empty;
+    }
+}

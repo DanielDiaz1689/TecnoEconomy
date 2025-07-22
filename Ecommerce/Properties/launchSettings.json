@@ -1,0 +1,13 @@
+{
+    "profiles": {
+        "Ecommerce.Server": {
+            "commandName": "Project",
+            "launchBrowser": true,
+            "applicationUrl": "https://localhost:7218;http://localhost:5218",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_CAPTURE_STARTUP_ERRORS": "1" 
+            }
+        }
+    }
+}
