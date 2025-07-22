@@ -1,4 +1,0 @@
-C:\Proyecto Ecommerce\Ecommerce\Ecommerce.Client\wwwroot\appsettings.json
-C:\Proyecto Ecommerce\Ecommerce\Ecommerce.Client\wwwroot\appsettings.Development.json
-wwwroot\appsettings.Development.json
-wwwroot\appsettings.json
